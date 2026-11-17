@@ -1,0 +1,1246 @@
+/* TeacherXuAI Antigravity Chinese UI, MIT. No network or application API access. */
+(function () {
+  'use strict';
+  const dictionary = /*__DICTIONARY__*/ {};
+  const VERSION = '2.32.1.3';
+  const KEY = '__teacherxu_antigravity_zh__';
+  if (window[KEY]) return;
+  // The native application serves its UI locally. Never translate sign-in sites.
+  if (!['127.0.0.1', 'localhost', '[::1]'].includes(location.hostname)) return;
+  const SKIP = 'script,style,pre,code,textarea,input,[contenteditable],iframe,webview,' +
+    '[data-no-translate],[translate="no"],[data-antigravity-zh-control],.monaco-editor,' +
+    '[data-sidebar-row-id],[data-tooltip-id$="-name"],[data-testid^="automation-card-"],' +
+    '[data-testid="project-selector-item"],[data-model-base],[data-harness],[data-mention-menu],' +
+    '[data-testid="ask-question-option-hover-card"],[data-testid="sidecar-iframe"],[data-testid="sidecar-iframe-slot"],' +
+    '[data-testid="automation-name"],[data-testid="sidecar-project-link"],[data-testid="automation-instructions-markdown"],' +
+    '[data-testid="automation-instructions-text"],[data-testid="automation-run"],[data-testid="sidecar-model-option"],' +
+    '[data-testid="new-sidecar-project"],[data-testid="new-sidecar-model"],[data-testid="diff-view-mode-detail"],' +
+    '[data-testid="diff-view-mode-option"] + span,[data-testid="terminal-tab-surface"],[data-testid="browser-url-display"],' +
+    '[data-testid="voice-picker-name"],[data-testid="customization-card"] a,[data-testid="customization-card"] .font-medium > button,' +
+    '[data-testid="featured-carousel-headline"],[data-testid^="bundle-card-"] h3,' +
+    '[data-testid="builtin-browser-download-dir-value"],[data-testid="gcp-project-combobox-list"],' +
+    '[data-testid="webview-device-chooser-option"],[data-testid="webview-prompt-message"],' +
+    '[data-testid="webview-download-filename"],[data-testid="webview-download-open"],' +
+    '[data-testid="url-security-host"],[data-testid="url-security-origin"],' +
+    '[data-testid="lsp-symbol-hover-card"],[data-testid="lsp-reference-item"],[data-testid="csv-scroll-viewport"],' +
+    '[data-testid="coordinator-worker-card"],[data-testid="coordinator-chat-header"],' +
+    '[data-testid="permission-download-details"] dd,[data-testid="resource-link"],' +
+    '[data-testid="ssh-host-project-item"],[data-testid="project-selector-github-repo-item"],' +
+    '[data-testid^="github-repo-option-"],[data-testid="ssh-connect-host-option"] > span:first-of-type,' +
+    '[data-testid="ssh-connect-error"] span.font-mono,[data-testid="ssh-machine-switcher-wsl-distro"] .truncate,' +
+    '[data-testid="plugins-visibility-option"],[data-testid="plugin-sidebar-item"],[data-testid="plugin-sidebar-mcp-app-item"],' +
+    '[data-testid="branch-repo-label"],[data-testid="branch-option"],' +
+    '[data-agy-chip],[data-agy-pill],[data-agy-window-label],[data-agy-filter-item]:not(:first-child),' +
+    '[data-agy-header] > span.truncate,[data-agy-strip-row] > span.truncate,' +
+    '.bg-transparent.min-w-0 > span.truncate[data-tooltip-id]';
+  // These nodes contain model/user data, even when rendered inside a UI popup.
+  const CONTENT = '[data-testid="ask-question-header-text"],[data-testid="ask-question-option-text"],' +
+    '[data-testid="planner-response-text"],[data-testid="progress-update-response-text"],[data-bubble-side="agent"],' +
+    '[data-testid="user-message-content"],[data-testid="side-question-followup-user"],[data-testid="voice-transcript-summary"],' +
+    '[data-testid="markdown-code-block-preview"],[data-testid="background-task-command"],' +
+    '[data-testid="setup-script-output"],[data-testid="browser-subagent-thinking"],[data-testid="comment-card-text"]';
+  const POPUPS = '.z-\\[6000\\],[role="menu"],[data-select-popup],[data-popover-popup],' +
+    '[data-hover-card-popup],[role="tooltip"]';
+  // Discover new UI roots, but do not schedule a full scan for unrelated prose changes.
+  const UI_TARGETS = POPUPS + ',[aria-label="Sidebar"],[aria-label="Settings"],[role="dialog"],h1,' +
+    '[data-testid="project-selector-trigger"],[data-testid="agent-input-box"],p.pointer-events-none,' +
+    '.files-changed-header,[data-testid="cleared-step-notice"],.flex-wrap,.proceed-button,' +
+    'button > span.whitespace-nowrap,button[aria-label],span.font-medium.text-sm,' +
+    '[data-testid="interaction-skip-button"],[data-testid="interaction-continue-button"],' +
+    '[data-testid="permission-details-toggle"],[data-testid="permission-target-editor"],' +
+    '[data-testid="permission-download-details"],[data-testid="ask-question-writein"],' +
+    '[data-testid="ask-question-progress"],[data-testid="thinking-collapsible-trigger"],' +
+    '[data-testid="artifact-card-split-button"],[data-testid="open-in-new-window-action"],' +
+    '[data-testid="overview-panel"],[data-testid="cloud-triggers-view"],' +
+    '[data-testid="trigger-InlineCreator"],[data-testid="automation-detail-view"],' +
+    '[data-testid="new-sidecar-modal"],[data-testid="sidecars-view"],' +
+    '[data-testid="automation-detail-page"],[data-testid="sidecar-detail"],' +
+    '[data-testid="bottom-terminal-panel"],[data-testid="bottom-terminal-panel-title"],' +
+    '[data-testid="bottom-terminal-panel-starting"],[data-testid="bottom-terminal-panel-empty"],' +
+    '[data-testid="terminal-tab-connecting"],[data-testid="terminal-password-warning"],' +
+    '[data-testid="diff-view-mode-trigger"],[data-testid="diff-view-mode-option"],' +
+    '[data-testid="builtin-browser-reload"],[data-testid="browser-url-input"],' +
+    '[data-testid="webview-download-show-in-folder"],[data-testid="webview-download-cancel"],' +
+    '[data-testid="webview-download-remove"],[data-testid="webview-downloads-close"],' +
+    '[data-testid="conversation-telemetry-icon-button"],[data-testid="conversation-telemetry-indicator"],' +
+    '[data-testid="voice-picker"],[data-testid="customizations-search"],' +
+    '[data-testid="customizations-marketplace"],[data-testid="customizations-installed"],[data-testid="plugins-tabs"],' +
+    '[data-testid="selection-quote-button"],[data-testid="selection-btw-button"],' +
+    '[data-testid="selection-comment-button"],[data-testid="selection-popup-quote-button"],[data-testid="selection-code-search-button"],' +
+    '[data-testid="comment-box"],[data-testid="comment-card"],' +
+    '[data-testid="side-question-panel"],[data-testid="confirm-delete-side-question"],' +
+    '[data-testid="create-coordinator-submit"],[data-testid="coordinator-settings-save"],' +
+    '[data-testid="new-coordinator-button"],[data-testid="coordinator-section-header"],' +
+    '[data-testid="file-tree-filter-input"],[data-testid="file-tree-filter-empty"],[data-testid="file-tree-vcs-dot"],' +
+    '[data-testid="csv-file-viewer"],[data-testid="lsp-peek-references-close"],' +
+    '[data-testid="url-security-indicator"],[data-testid="browser-cert-interstitial"],' +
+    '[data-testid="builtin-browser-caa-open-external"],[data-testid="onboarding-auth-code-panel"],' +
+    '[data-testid="automation-model-unavailable"],' +
+    '[data-testid="computer-permissions-card"],[data-testid="ssh-connect-dialog"],' +
+    '[data-testid="ssh-machine-switcher"],[data-testid="ssh-host-label"],' +
+    '[data-testid="permissions-selector-trigger"],[data-testid="provider-resource-filter"],' +
+    '[data-testid="google-drive-connect-view"],[data-testid="setup-script-save-button"],' +
+    '[data-testid="setup-script-validate-button"],[data-testid="setup-script-status"],' +
+    '[data-testid="setup-script-copy-button"],[data-testid="plugins-section-header"],' +
+    '[data-testid="plugins-visibility-trigger"],[data-testid="webview-url-bar-draft-capsule"],[data-testid="webview-url-bar-downloads"],' +
+    '[data-testid="side-panel-new-tab-button"],[data-testid="side-panel-pending-terminal-tab"],[data-testid="agent-browser-cross-window-banner"],' +
+    '[data-testid="file-tree-filter-error"],[data-testid="model-selector-refresh"],' +
+    '[data-testid="onboarding-switch-to-auth-code"],[data-testid="onboarding-brand-shell"],[data-agy-agents-pane],' +
+    '[data-testid="project-folder-selection-step"],[data-testid="cloud-resource-disclosure-modal"],' +
+    '[data-testid="title-menu-bar"],[data-testid="title-menu-bar-item"],[data-testid="title-menu-bar-option"],' +
+    'input[placeholder="Search conversations..."]';
+  const records = new Map();
+  const placeholderRecords = new Map();
+  const attrRecords = new Map();
+  let enabled = true;
+  let scheduled = false;
+  let disposed = false;
+  let control;
+  let observer;
+  let settingsRoot;
+  const normalize = value => value.trim().replace(/\s+/g, ' ');
+  const english = node => {
+    const record = records.get(node);
+    return record && node.nodeValue === record.translated ? record.original : node.nodeValue;
+  };
+  function originalText(element) {
+    const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+    let result = '', node;
+    while ((node = walker.nextNode())) result += english(node);
+    return normalize(result);
+  }
+  function formatLimitName(raw) {
+    const lower = raw.trim().toLowerCase();
+    if (lower === 'weekly' || lower === 'weekly limit') return '本周额度';
+    if (lower === '5-hour' || lower === '5 hour' || lower === 'five-hour' || lower === 'five hour') return ' 5 小时额度';
+    if (lower === 'daily' || lower === 'daily limit') return '今日额度';
+    if (lower === 'hourly' || lower === 'hourly limit') return '每小时额度';
+    if (lower === 'monthly' || lower === 'monthly limit') return '本月额度';
+    return `${raw.trim()}额度`;
+  }
+  function formatDuration(raw) {
+    return raw.trim()
+      .replace(/less than a minute|<1m/gi, '不到 1 分钟')
+      .replace(/(\d+)\s*days?/gi, '$1 天')
+      .replace(/(\d+)\s*hours?/gi, '$1 小时')
+      .replace(/(\d+)\s*(?:minutes?|mins?)/gi, '$1 分钟')
+      .replace(/(\d+)\s*(?:seconds?|secs?)/gi, '$1 秒')
+      .replace(/(\d+)d\b/gi, '$1 天')
+      .replace(/(\d+)h\b/gi, '$1 小时')
+      .replace(/(\d+)m\b/gi, '$1 分钟')
+      .replace(/,\s*and\s+|\s+and\s+|,\s*/gi, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+  function translateDynamic(key) {
+    // Dynamic quota refresh text in Models & Usage:
+    // e.g. "You have used some of your weekly limit, it will fully refresh in 3 days, 20 hours."
+    // e.g. "You have used some of your 5-hour limit, it will fully refresh in 1 hour, 47 minutes."
+    let match = key.match(
+      /^You(?:'ve| have) used (some|all|most|\d+%) of your ([^,]+?)(?: limit)?,\s*(?:and )?it will (?:fully )?refresh in (.+?)\.?$/i
+    );
+    if (match) {
+      const amountMap = { some: '部分', all: '全部', most: '大部分' };
+      const amount = amountMap[match[1].toLowerCase()] || ` ${match[1]} 的`;
+      const limit = formatLimitName(match[2]);
+      const duration = formatDuration(match[3]);
+      return `你已使用${amount}${limit}，将于 ${duration}后完全恢复。`;
+    }
+    match = key.match(
+      /^You(?:'ve| have) reached your ([^,]+?)(?: limit)?,\s*(?:and )?it will (?:fully )?refresh in (.+?)\.?$/i
+    );
+    if (match) {
+      return `你已达到${formatLimitName(match[1])}上限，将于 ${formatDuration(match[2])}后完全恢复。`;
+    }
+    match = key.match(/^You (?:have not|haven't) used any of your ([^.]+?)(?: limit)?\.?$/i);
+    if (match) {
+      return `你尚未使用${formatLimitName(match[1])}。`;
+    }
+    match = key.match(/^Resets in (.+)$/i);
+    if (match) {
+      return `将于 ${formatDuration(match[1])}后重置`;
+    }
+    match = key.match(/^Available AI Credits:\s*(.+)$/i);
+    if (match) {
+      return `可用 AI 点数：${match[1]}`;
+    }
+    match = key.match(/^Shared with:\s*(.+)$/i);
+    if (match) {
+      return `共享配额模型：${match[1]}`;
+    }
+    match = key.match(/^Show more \((\d+)\)$/i);
+    if (match) {
+      return `显示更多 (${match[1]})`;
+    }
+    match = key.match(/^Send feedback as (.+)$/i);
+    if (match) {
+      return `以 ${match[1]} 的身份发送反馈`;
+    }
+    match = key.match(/^Show (\d+) breakdowns?$/i);
+    if (match) {
+      return `展开 ${match[1]} 项明细`;
+    }
+    match = key.match(/^(\d+) tools?$/i);
+    if (match) {
+      return `${match[1]} 个工具`;
+    }
+    match = key.match(/^(\d+) demoted$/i);
+    if (match) {
+      return `${match[1]} 项已降级`;
+    }
+    match = key.match(/^(\d+) excluded$/i);
+    if (match) {
+      return `${match[1]} 项已排除`;
+    }
+    match = key.match(/^(\d+) tools? excluded$/i);
+    if (match) {
+      return `已排除 ${match[1]} 个工具`;
+    }
+    match = key.match(/^(\d+) active conversations?(?: and (\d+) archived conversations?)?$/i);
+    if (match) {
+      return match[2]
+        ? `${match[1]} 个进行中对话和 ${match[2]} 个已归档对话`
+        : `${match[1]} 个进行中对话`;
+    }
+    match = key.match(/^(\d+) archived conversations?$/i);
+    if (match) {
+      return `${match[1]} 个已归档对话`;
+    }
+    match = key.match(/^(\d+) models? selected$/i);
+    if (match) {
+      return `已选择 ${match[1]} 个模型`;
+    }
+    match = key.match(/^(\d+) active modes?$/i);
+    if (match) {
+      return `已启用 ${match[1]} 个模式`;
+    }
+    match = key.match(/^(\d+) files? changed$/i);
+    if (match) {
+      return `${match[1]} 个文件已修改`;
+    }
+    match = key.match(/^See all \((\d+)\)$/i);
+    if (match) {
+      return `查看全部 (${match[1]})`;
+    }
+    match = key.match(/^Low contrast ratio \((.+)\)\. Text may be hard to read\.$/i);
+    if (match) {
+      return `对比度过低（${match[1]}），文字可能难以辨认。`;
+    }
+    match = key.match(/^(.+) \((Experimental|Default|Preview)\)$/);
+    if (match && Object.hasOwn(dictionary, match[1])) {
+      const suffix = { Experimental: '实验性', Default: '默认', Preview: '预览' }[match[2]];
+      return `${dictionary[match[1]]}（${suffix}）`;
+    }
+    match = key.match(/^(\d+(?:\s*\/\s*\d+)?) rows?$/);
+    if (match) {
+      return `${match[1]} 行`;
+    }
+    match = key.match(/^Thought for (\d+)s$/);
+    if (match) {
+      return `已思考 ${match[1]} 秒`;
+    }
+    match = key.match(/^All changes since (.+)$/);
+    if (match) {
+      return `自 ${match[1]} 以来的所有变更`;
+    }
+    match = key.match(/^Agent needs permission to act on (.+)$/);
+    if (match) {
+      return `智能体需要权限以操作 ${match[1]}`;
+    }
+    match = key.match(/^(Submit|Continue) \((.+)\)$/);
+    if (match) {
+      return `${match[1] === 'Submit' ? '提交' : '继续'} (${match[2]})`;
+    }
+    match = key.match(/^Skip \((.+)\), Skip All \((.+)\)$/);
+    if (match) {
+      return `跳过 (${match[1]})，全部跳过 (${match[2]})`;
+    }
+    match = key.match(/^Running for (.+)$/);
+    if (match) {
+      return `已运行 ${formatDuration(match[1])}`;
+    }
+    match = key.match(/^No (automations|scheduled tasks|sidecars) match [“"]([\s\S]+)[”"]\.$/);
+    if (match) {
+      const noun = { automations: '自动化任务', 'scheduled tasks': '计划任务', sidecars: '扩展服务' }[match[1]];
+      return `没有匹配“${match[2]}”的${noun}。`;
+    }
+    match = key.match(/^Step (\d+) of (\d+)$/);
+    if (match) {
+      return `第 ${match[1]} 步，共 ${match[2]} 步`;
+    }
+    match = key.match(/^An? (automation|scheduled task) with (?:the )?ID [“"]?(.+?)[”"]? already exists\.$/);
+    if (match) {
+      return `ID 为“${match[2]}”的${match[1] === 'automation' ? '自动化任务' : '计划任务'}已存在。`;
+    }
+    match = key.match(/^Task "([\s\S]+)" not found\.$/);
+    if (match) {
+      return `未找到任务“${match[1]}”。`;
+    }
+    match = key.match(/^Use (Fola|Arlo|Cleo|Finn|Gero|Lora|Neno|Olin|Tari)$/);
+    if (match) {
+      return `使用 ${match[1]}`;
+    }
+    match = key.match(/^Your Plan:\s*(.+)$/);
+    if (match) {
+      return `当前套餐：${match[1]}`;
+    }
+    match = key.match(/^Conflicts with "([\s\S]+)" \(press Enter to replace\)$/);
+    if (match) {
+      return `与“${match[1]}”冲突（按 Enter 替换）`;
+    }
+    match = key.match(/^Conflict: also assigned to (.+)$/);
+    if (match) {
+      return `冲突：同时分配给了 ${match[1]}`;
+    }
+    match = key.match(/^No MCP servers found for "([\s\S]+)"$/);
+    if (match) {
+      return `未找到与“${match[1]}”匹配的 MCP 服务器`;
+    }
+    match = key.match(/^Connecting to (.+)…$/);
+    if (match) {
+      return `正在连接到 ${match[1]}…`;
+    }
+    match = key.match(/^Connected to (.+)$/);
+    if (match) {
+      return `已连接到 ${match[1]}`;
+    }
+    match = key.match(/^SSH Config \((.+)\)$/);
+    if (match) {
+      return `SSH 配置（${match[1]}）`;
+    }
+    match = key.match(/^(\d+) hidden hosts?$/);
+    if (match) {
+      return `${match[1]} 台已隐藏主机`;
+    }
+    match = key.match(/^Remove (.+) from Recent$/);
+    if (match) {
+      return `从最近使用中移除 ${match[1]}`;
+    }
+    match = key.match(/^Hide (.+) from this list$/);
+    if (match) {
+      return `从此列表中隐藏 ${match[1]}`;
+    }
+    match = key.match(/^Show (.+) in the list again$/);
+    if (match) {
+      return `重新在列表中显示 ${match[1]}`;
+    }
+    match = key.match(/^On (\S+)$/);
+    if (match) {
+      return `位于 ${match[1]}`;
+    }
+    match = key.match(/^Agent permissions preset selector, current:\s*(.+)$/);
+    if (match) {
+      return `智能体权限预设选择器，当前：${dictionary[match[1]] || match[1]}`;
+    }
+    match = key.match(/^Agent permissions preset:\s*([^,]+),\s*(.+)$/);
+    if (match) {
+      return `智能体权限预设：${dictionary[match[1]] || match[1]}，${dictionary[match[2]] || match[2]}`;
+    }
+    match = key.match(/^(.+) needs? the terminal sandbox, which isn't available on this host\.$/);
+    if (match) {
+      const presets = match[1].split(/\s+and\s+/).map(p => dictionary[p.trim()] || p.trim()).join(' 和 ');
+      return `${presets} 需要终端沙盒，但当前主机不支持该功能。`;
+    }
+    match = key.match(/^Add (Google Drive|GitHub) resources$/);
+    if (match) {
+      return `添加 ${match[1]} 资源`;
+    }
+    match = key.match(/^Connect your account to browse (Google Drive|GitHub)\.$/);
+    if (match) {
+      return `关联账号以浏览 ${match[1]}。`;
+    }
+    match = key.match(/^Add \((\d+)\)$/);
+    if (match) {
+      return `添加 (${match[1]})`;
+    }
+    match = key.match(/^A project's private resources must all belong to one owner \((.+)\)\.$/);
+    if (match) {
+      return `项目的私有资源必须全部归属于同一所有者（${match[1]}）。`;
+    }
+    match = key.match(/^(\d+) accounts?$/);
+    if (match) {
+      return `${match[1]} 个账号`;
+    }
+    match = key.match(/^(\d+) Drafts?$/);
+    if (match) {
+      return `${match[1]} 条草稿`;
+    }
+    match = key.match(/^Resume (\d+) comment drafts?$/);
+    if (match) {
+      return `继续编辑 ${match[1]} 条评论草稿`;
+    }
+    match = key.match(/^Hidden by policy \((.+)\)\.$/);
+    if (match) {
+      return `已按策略隐藏（${match[1]}）。`;
+    }
+    match = key.match(/^([A-Z0-9]{1,8}) file uploads are not currently supported in remote mode$/);
+    if (match) {
+      return `云端远程模式暂不支持上传 ${match[1]} 文件`;
+    }
+    match = key.match(/^(\d+)([smhd]) limit$/i);
+    if (match) {
+      return `${match[1]} ${{ s: '秒', m: '分钟', h: '小时', d: '天' }[match[2].toLowerCase()]}额度`;
+    }
+    match = key.match(/^(\d+)% left$/i);
+    if (match) {
+      return `剩余 ${match[1]}%`;
+    }
+    match = key.match(/^(Daily limit|Weekly limit|\d+[smhd] limit),\s*resets in (.+)$/i);
+    if (match) {
+      const cap = match[1][0].toUpperCase() + match[1].slice(1).toLowerCase();
+      const head = dictionary[cap] || translateDynamic(match[1]);
+      return `${head}，将于 ${formatDuration(match[2])}后重置`;
+    }
+    match = key.match(/^Downloads, (\d+)% complete$/);
+    if (match) {
+      return `下载（已完成 ${match[1]}%）`;
+    }
+    match = key.match(/^Version (\d[\w.+~-]*)$/);
+    if (match) {
+      return `版本 ${match[1]}`;
+    }
+    return null;
+  }
+  const settingsNavIds = new Set(['General', 'App', 'Appearance', 'Browser', 'Project 4K',
+    'Interface Layout', 'Shortcuts', 'Notifications', 'Models', 'Customizations', 'Developer',
+    'Running', 'Provide Feedback', 'Give Feedback', 'Account', 'Conversations',
+    'Projects', 'Environments']);
+  function protectedContent(element, allowPermissionOption = false) {
+    for (let content = element.closest(CONTENT); content; content = content.parentElement?.closest(CONTENT)) {
+      if (allowPermissionOption && content.matches('[data-testid="ask-question-option-text"]')) continue;
+      // The permission header embeds one fixed UI control alongside dynamic request text.
+      if (content.matches('[data-testid="ask-question-header-text"]') &&
+        element.closest('[data-testid="permission-details-toggle"]')) continue;
+      return true;
+    }
+    return false;
+  }
+  function protectedNode(node, allowPermissionOption = false) {
+    const element = node.nodeType === 1 ? node : node.parentElement;
+    if (!element || element.closest(SKIP) || protectedContent(element, allowPermissionOption)) return true;
+    if (element.closest('[data-agy-header] > button:first-of-type')) return true;
+    const sshConfigName = element.closest('[data-testid="ssh-config-file-name"]');
+    if (sshConfigName && originalText(sshConfigName) !== '~/.ssh/config (default)') return true;
+    const branchPill = element.closest('[data-testid="branch-pill-label"]');
+    if (branchPill && !['Select branch', 'Repo default'].includes(originalText(branchPill))) return true;
+    const titleMenuItem = element.closest('[data-testid="title-menu-bar-item"]');
+    if (titleMenuItem && !['Workspace', 'View', 'Window'].includes(originalText(titleMenuItem))) return true;
+    // Settings' account and workspace/project nav buttons contain user data, not UI copy.
+    const button = element.closest('button');
+    if (!button) return false;
+    if (/[^\s]+@[^\s]+/.test(button.textContent)) return true;
+    const testId = button.getAttribute('data-testid');
+    return !!(testId?.startsWith('settings-nav-item-') && !settingsNavIds.has(testId.slice(18)));
+  }
+  const allowedFragments = new Set(['(ADC)', 'Allowed Domains', 'Also includes',
+    'Organization MCP Allowlist (Read-Only)', 'Powered by Gemini Live ·', 'Terms of Service',
+    'This will permanently delete', 'within it.', 'including', 'Zipping', 'in the top left.',
+    'menu)', 'to be installed.',
+    'to be installed. The browser subagent can be invoked by typing /browser in the conversation input box.',
+    'Configure allowed and denied URLs for the browser subagent (invoked with /browser). Requires',
+    'For Antigravity Business consumption options, see', 'Visit',
+    'to ask for content changes for legal reasons.', 'to have the agent generate a plan.',
+    'when working', 'in this project', 'in these conversations', 'when working in this project.',
+    'Click', 'to open macOS Privacy & Security.', 'Then create the project in its window.',
+    "Couldn't connect to", 'No hosts in', 'yet. Type one above.']);
+  function translateNode(node, allowPermissionOption = false) {
+    if (protectedNode(node, allowPermissionOption)) return;
+    const current = node.nodeValue;
+    const previous = records.get(node);
+    if (previous && current === previous.translated) return;
+    records.delete(node); // React may reuse a text node for a new label.
+    const key = normalize(current);
+    // Guard against React inline variable concatenation (e.g. ["Open ", x, " panel"] or ["Delete ", <strong>x</strong>]).
+    const prevText = node.previousSibling?.nodeType === 3 ? english(node.previousSibling) : '';
+    const nextText = node.nextSibling?.nodeType === 3 ? english(node.nextSibling) : '';
+    const inlineConcat = (/\s$/.test(current) && /\S/.test(nextText)) ||
+      (/^\s/.test(current) && /\S/.test(prevText)) ||
+      (/\S/.test(prevText) && /\s$/.test(prevText)) ||
+      (/\S/.test(nextText) && /^\s/.test(nextText)) ||
+      (/^[A-Z][a-z]+\s+$/.test(current) && node.nextSibling?.tagName === 'STRONG');
+    if (inlineConcat && !key.endsWith(':') && !allowedFragments.has(key)) return;
+    const target = key === 'New' && node.parentElement?.closest('.rounded-full.bg-secondary')
+      ? '新'
+      : (Object.hasOwn(dictionary, key) ? dictionary[key] : translateDynamic(key));
+    if (!target) return;
+    const translated = current.replace(/\S[\s\S]*\S|\S/, target);
+    records.set(node, { original: current, translated });
+    node.nodeValue = translated;
+  }
+  function setRecordedText(node, next) {
+    const raw = english(node);
+    if (node.nodeValue === next && records.get(node)?.original === raw) return;
+    records.set(node, { original: raw, translated: next });
+    node.nodeValue = next;
+  }
+  function translateMultiTextElement(el, allowPermissionOption = false) {
+    if (el.children.length > 0 || el.childNodes.length < 2 || protectedNode(el, allowPermissionOption)) return false;
+    const textNodes = [...el.childNodes].filter(n => n.nodeType === 3);
+    if (textNodes.length < 2) return false;
+    const originals = textNodes.map(english);
+    const raw = originals.join('');
+    const key = normalize(raw);
+    const target = Object.hasOwn(dictionary, key) ? dictionary[key] : translateDynamic(key);
+    if (!target) {
+      for (const n of textNodes) {
+        const rec = records.get(n);
+        if (rec?.multi && n.nodeValue === rec.translated) {
+          n.nodeValue = rec.original;
+          records.delete(n);
+        }
+      }
+      return false;
+    }
+    const translated = raw.replace(/\S[\s\S]*\S|\S/, target);
+    textNodes.forEach((n, i) => {
+      const next = i === 0 ? translated : '';
+      records.set(n, { original: originals[i], translated: next, multi: true });
+      if (n.nodeValue !== next) n.nodeValue = next;
+    });
+    return true;
+  }
+  function translatePlaceholder(el) {
+    if (!el || el.parentElement?.closest(SKIP) || protectedContent(el)) return;
+    const current = el.getAttribute('placeholder');
+    if (!current) return;
+    const previous = placeholderRecords.get(el);
+    if (previous && current === previous.translated) return;
+    placeholderRecords.delete(el);
+    const key = normalize(current);
+    if (!Object.hasOwn(dictionary, key)) return;
+    const translated = current.replace(/\S[\s\S]*\S|\S/, dictionary[key]);
+    placeholderRecords.set(el, { original: current, translated });
+    el.setAttribute('placeholder', translated);
+  }
+  const skippedControl = el => el.matches('input,textarea') ? el.parentElement?.closest(SKIP) : el.closest(SKIP);
+  function translateAttrs(el) {
+    if (!el || protectedContent(el) || skippedControl(el) ||
+      (el.matches('[data-testid="title-menu-bar-item"]') && !['Workspace', 'View', 'Window'].includes(originalText(el))) ||
+      el.matches('[data-testid="ssh-config-file-name"],[data-testid="ssh-connect-host-option"],[data-testid="ssh-host-label"],[data-testid="branch-pill-trigger"]')) return;
+    let entry = attrRecords.get(el);
+    for (const attr of ['title', 'aria-label']) {
+      const current = el.getAttribute(attr);
+      if (!current) continue;
+      const prev = entry?.[attr];
+      if (prev && current === prev.translated) continue;
+      if (entry) delete entry[attr];
+      const key = normalize(current);
+      if (key === 'Actions' || (!Object.hasOwn(dictionary, key) && !translateDynamic(key))) continue;
+      const target = Object.hasOwn(dictionary, key) ? dictionary[key] : translateDynamic(key);
+      const translated = current.replace(/\S[\s\S]*\S|\S/, target);
+      if (!entry) { entry = {}; attrRecords.set(el, entry); }
+      entry[attr] = { original: current, translated };
+      el.setAttribute(attr, translated);
+    }
+  }
+  function translateTree(root, allowPermissionOption = false) {
+    if (!root || (root.nodeType === 1 && (protectedContent(root, allowPermissionOption) ||
+      (!root.matches('input,textarea') && root.closest(SKIP))))) return;
+    if (root.nodeType === 1 && translateMultiTextElement(root, allowPermissionOption)) return;
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT, {
+      acceptNode(node) {
+        if (node.nodeType === 1) {
+          if (node.matches(SKIP + ',' + CONTENT) || translateMultiTextElement(node, allowPermissionOption)) {
+            return NodeFilter.FILTER_REJECT;
+          }
+          return NodeFilter.FILTER_SKIP;
+        }
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    let node;
+    while ((node = walker.nextNode())) translateNode(node, allowPermissionOption);
+    if (root.nodeType === 1) {
+      if (root.matches('input[placeholder],textarea[placeholder]')) translatePlaceholder(root);
+      for (const el of root.querySelectorAll('input[placeholder],textarea[placeholder]')) {
+        translatePlaceholder(el);
+      }
+    }
+  }
+  function findSettings() {
+    if (settingsRoot?.isConnected) return settingsRoot;
+    // Require the distinctive navigation tabs AND a settings heading. Fail closed.
+    const roots = [...document.querySelectorAll('[aria-label="Settings"], [role="dialog"]')];
+    for (const heading of document.querySelectorAll('h1')) {
+      if (originalText(heading) !== 'Settings') continue;
+      let ancestor = heading.parentElement;
+      for (let i = 0; ancestor && i < 6; i++, ancestor = ancestor.parentElement) {
+        if (ancestor === document.body) break;
+        roots.push(ancestor);
+      }
+    }
+    settingsRoot = roots.find(root => {
+      if (root.matches?.('[aria-label="Settings"].settings-modal-container')) return true;
+      const names = [...root.querySelectorAll('button')].map(originalText);
+      return ['General', 'Application', 'Appearance'].every(name => names.includes(name)) &&
+        [...root.querySelectorAll('h1,h2')].some(h => originalText(h) === 'Settings');
+    });
+    return settingsRoot;
+  }
+  const navigation = new Set(['New Conversation', 'Conversation History', 'Automations',
+    'Scheduled Tasks', 'Customizations', 'Settings', 'Provide Feedback', 'Give Feedback',
+    'Chief of Staff']);
+  const sidebarTestIds = new Set(['automations-button', 'settings-button',
+    'new-conversation-button', 'history-button', 'customizations-button', 'concierge-button']);
+  const sidebarPlaceholders = new Set(['No conversations yet', 'No pinned conversations',
+    'Drop to add to group', 'See all']);
+  const projectTriggerLabels = new Set(['No Project', 'Select Project', 'Select Workspace',
+    'New Workspace', 'No Workspace']);
+  const chatInputPlaceholders = new Set(['Ask anything, @ to mention, / for actions',
+    'Ask anything, @ to mention', 'Ask anything',
+    'Message subagent, @ to mention, / for actions', 'Message subagent, @ to mention',
+    'Listening. Ask anything.', 'Leave a comment', 'Edit comment']);
+  const historySafeTexts = new Set(['Conversation History',
+    'Manage and revisit your past agent sessions.', 'Active', 'Archived', 'Select', 'Done',
+    'Select all', 'Deselect all', 'Archive', 'Unarchive', 'Delete', 'Show more',
+    'No matching conversations.', 'No archived conversations.', 'No conversations yet.',
+    'No conversations found', 'Display Options', 'This page is going away soon',
+    'Search conversations with', 'in the top left.', 'View archived in the sidebar', 'menu)']);
+  const overviewSafeTexts = new Set(['Overview', 'Review', 'Files', 'Terminal', 'Plugins',
+    'Subagents', 'Coordinators', 'Side Questions', 'Environments', 'Background Tasks', 'Goals',
+    'Documents', 'Artifacts', 'Links', 'Modified Files', 'Uploads', 'Extensions', 'No subagents',
+    'No coordinators', 'No links', 'No uploads', 'No plugins available', 'Needs attention',
+    'Approve', 'Deny', 'Blocked, needs input', 'Agents', 'Chief of Staff Dashboard',
+    'Customize Sections', 'Show less', 'Open in Side Panel', 'Open in Built-in Browser',
+    'Open in New Tab', 'Open in External Browser']);
+  const permissionOptionSafeTexts = new Set(['Yes, allow', 'Yes, allow this time',
+    'Yes, allow this download', 'Yes, save rule in this conversation',
+    'Yes, and always allow in this conversation', 'Yes, save rule globally',
+    'Yes, and always allow']);
+  const permissionDownloadLabels = {
+    File: '文件', From: '来源', 'Redirected from': '重定向自', Type: '类型', 'Save to': '保存至'
+  };
+  const approvalButtonSafeTexts = new Set(['Allow Once', 'Always Allow', 'Deny', 'Confirm',
+    'Accept', 'Reject', 'Configure', 'Try Again']);
+  const automationSafeTexts = new Set(['Automations', 'Scheduled Tasks', 'Scheduled', 'Always on',
+    'Paused', 'Next run', 'Last run', 'Instructions', 'Runs', 'All runs', 'No runs yet',
+    'No instructions.', 'No upcoming run.', 'Schedule', 'Model', 'Events', 'Run Now', 'Edit',
+    'Save', 'Saved', 'Reset', 'Cancel', 'Delete', 'See less', 'Show all', 'Show less',
+    'Paused. Resume it to schedule the next run.', 'Sidecar feature is not available.',
+    'Runs a command', 'Could not start.', 'Starting', 'Paused.',
+    'No automations configured.', 'No scheduled tasks configured.',
+    'No automations matching your search', 'No scheduled tasks matching your search',
+    'Back to Automations', 'Back to Scheduled Tasks', 'Loading runs…',
+    'This sidecar failed to start.']);
+  function buttonLeadLabel(btn) {
+    const first = btn.firstChild;
+    if (first?.nodeType === 3) return normalize(english(first));
+    const trunc = btn.querySelector('span.truncate');
+    return trunc ? originalText(trunc) : originalText(btn);
+  }
+  function isPermissionCard(card) {
+    if (!card || card.closest(SKIP) || protectedContent(card)) return false;
+    const header = card.querySelector('[data-testid="ask-question-header-text"]');
+    const input = card.querySelector('[data-testid="ask-question-writein"]');
+    if (![header, input].every(el => el?.closest('[tabindex="-1"]') === card)) return false;
+    if (card.querySelector('[data-testid="ask-question-collapse-button"]')?.closest('[tabindex="-1"]') === card) return false;
+    const hasMarker = [...card.querySelectorAll(
+      '[data-testid="permission-details-toggle"],[data-testid="permission-target-editor"],' +
+      '[data-testid="permission-download-details"],[data-testid="ask-question-header-icon"]'
+    )].some(el => el.closest('[tabindex="-1"]') === card);
+    if (!hasMarker) return false;
+    const placeholder = placeholderRecords.get(input)?.original ?? input.getAttribute('placeholder');
+    return normalize(placeholder || '') === '(tell the agent what to do instead)';
+  }
+  function scan() {
+    if (disposed || !enabled || !document.body) return;
+    observer.disconnect();
+    try {
+      for (const node of records.keys()) if (!node.isConnected) records.delete(node);
+      for (const el of placeholderRecords.keys()) if (!el.isConnected) placeholderRecords.delete(el);
+      for (const el of attrRecords.keys()) if (!el.isConnected) attrRecords.delete(el);
+      const root = findSettings();
+      if (root) {
+        const supported = ['General', 'Application', 'Appearance', 'Browser',
+          'Browser Actuation Permissions', 'Models & Usage', 'Shortcuts', 'Account',
+          'Provide Feedback', 'Give Feedback', 'Customizations', 'Notifications',
+          'Project 4K', 'Interface Layout', 'Permissions', 'Global Permissions',
+          'GitHub Permissions', 'File Permissions', 'Network Permissions',
+          'Terminal Commands', 'MCP Tools', 'Add MCP Servers', 'Manage Hooks',
+          'Build With Google Plugins', 'Select your license', 'Developer',
+          'Workspaces', 'Projects', 'Not in Project', 'Environments', 'Running (Dev only)'];
+        const headings = [...root.querySelectorAll('h2')].map(originalText);
+        if (headings.some(name => supported.includes(name))) {
+          translateTree(root);
+          for (const el of root.querySelectorAll(
+            'button[aria-label],input[aria-label],textarea[aria-label],[role="radio"][aria-label],' +
+            '[role="radiogroup"][aria-label],[role="switch"][aria-label],[role="region"][aria-label],' +
+            '[role="listbox"][aria-label],button[title]'
+          )) translateAttrs(el);
+        } else {
+          // Other settings screens can contain user-authored skills and project names.
+          for (const el of root.querySelectorAll('button,h1,h2,div')) {
+            if ((el.tagName !== 'DIV' || el.children.length === 0) &&
+              ['Settings', 'General', 'Application', 'Appearance', 'Browser',
+                'Browser Actuation Permissions', 'Models', 'Conversations', 'Shortcuts',
+                'Provide Feedback', 'Give Feedback', 'Account', 'Customizations',
+                'Notifications', 'Project 4K', 'Interface Layout', 'Permissions',
+                'Global Permissions', 'GitHub Permissions', 'Developer', 'Back',
+                'Workspaces', 'Projects', 'Not in Project', 'Environments',
+                'Settings for conversations outside of projects.',
+                'Settings for conversations outside of workspaces.',
+                'Agent settings and permissions for conversations outside of projects.',
+                'Agent settings and permissions for conversations outside of workspaces.'
+              ].includes(originalText(el))) translateTree(el);
+          }
+        }
+      }
+      for (const vp of document.querySelectorAll('[data-testid="voice-picker"]')) {
+        translateTree(vp);
+        for (const el of vp.querySelectorAll('[aria-label],[title]')) translateAttrs(el);
+      }
+      // Only explicitly named global navigation controls; never project names/history.
+      const sidebar = document.querySelector('[aria-label="Sidebar"]');
+      if (sidebar) {
+        for (const el of sidebar.querySelectorAll('button,a')) {
+          const label = el.getAttribute('aria-label');
+          const href = el.getAttribute('href');
+          const testId = el.getAttribute('data-testid');
+          const text = originalText(el);
+          const knownLink = el.tagName === 'A' && ['/', '/history', '/customizations'].includes(href);
+          const rowChild = el.closest('[data-sidebar-row-id],[data-testid^="conversation-row-"]');
+          if ((label && navigation.has(label)) || (knownLink && navigation.has(text)) ||
+            (testId && sidebarTestIds.has(testId)) ||
+            text === 'Provide Feedback' || text === 'Give Feedback' ||
+            (!rowChild && (/^See all \(\d+\)$/.test(text) || text === 'See all' || text === 'See less' || text === 'Show less'))) {
+            translateTree(el);
+          }
+        }
+        for (const el of sidebar.querySelectorAll(
+          '[data-testid="conversation-archive-button"],[data-testid="conversation-pin-button"],' +
+          '[data-testid="conversation-kebab"],[data-testid="new-coordinator-button"],' +
+          '[data-testid="plugins-visibility-trigger"],[data-testid="sidebar-add-project-button"]'
+        )) {
+          translateAttrs(el);
+        }
+        for (const el of sidebar.querySelectorAll(
+          '[data-testid="section-header"] h2,[data-testid="coordinator-section-header"] h2,' +
+          '[data-testid="plugins-section-header"] h2'
+        )) {
+          translateTree(el);
+        }
+        for (const el of sidebar.querySelectorAll('span')) {
+          const text = !el.closest('[data-sidebar-row-id],[data-testid^="conversation-row-"]') ? originalText(el) : '';
+          if (text && (sidebarPlaceholders.has(text) || /^See all \(\d+\)$/.test(text))) {
+            translateTree(el);
+          }
+        }
+      }
+      // Project selector trigger on home / chat view (only UI placeholder states, never project names).
+      for (const el of document.querySelectorAll('[data-testid="project-selector-trigger"]')) {
+        if (projectTriggerLabels.has(originalText(el))) translateTree(el);
+      }
+      // Chat input box (Lexical editor content is protected by [contenteditable] in SKIP).
+      for (const el of document.querySelectorAll('[data-testid="agent-input-box"]')) {
+        translateTree(el);
+      }
+      for (const el of document.querySelectorAll('p.pointer-events-none')) {
+        if (chatInputPlaceholders.has(originalText(el))) translateTree(el);
+      }
+      // Changed files summary bar in conversation view (only the header bar, never expanded file paths).
+      for (const el of document.querySelectorAll('.files-changed-header,[data-testid="cleared-step-notice"]')) {
+        translateTree(el);
+      }
+      // P0: Conversation stream approval, AskQuestion, Plan/Artifact review, and Thinking chrome.
+      for (const el of document.querySelectorAll(
+        '[data-testid="interaction-skip-button"],[data-testid="interaction-continue-button"],' +
+        '[data-testid="permission-details-toggle"],.proceed-button,' +
+        '[data-testid="artifact-card-split-button"],[data-testid="open-in-new-window-action"]'
+      )) {
+        translateTree(el);
+      }
+      for (const span of document.querySelectorAll('button > span.whitespace-nowrap')) {
+        if (span.firstChild?.nodeType === 3 && normalize(english(span.firstChild)) === 'Proceed') {
+          translateNode(span.firstChild);
+        }
+      }
+      for (const el of document.querySelectorAll(
+        '[data-testid="ask-question-collapse-button"],[data-testid="ask-question-dismiss-button"]'
+      )) {
+        translateAttrs(el);
+      }
+      for (const el of document.querySelectorAll('[data-testid="ask-question-progress"]')) {
+        for (const btn of el.parentElement?.querySelectorAll('button') ?? []) translateAttrs(btn);
+      }
+      for (const el of document.querySelectorAll('[data-testid="ask-question-header-text"]')) {
+        const badge = el.nextElementSibling;
+        if (badge && originalText(badge) === 'Multi-select') translateTree(badge);
+      }
+      for (const el of document.querySelectorAll('[data-testid="ask-question-writein"]')) {
+        const rawPh = placeholderRecords.get(el)?.original ?? el.getAttribute('placeholder');
+        translatePlaceholder(el);
+        if (rawPh && normalize(rawPh) === '(tell the agent what to do instead)') {
+          const card = el.closest('[tabindex="-1"]');
+          if (isPermissionCard(card)) {
+            const prev = el.previousElementSibling;
+            if (prev?.firstChild?.nodeType === 3 && prev.childNodes.length === 1 &&
+              !protectedNode(prev.firstChild) && originalText(prev) === 'No') {
+              const n = prev.firstChild, cur = n.nodeValue;
+              if (records.get(n)?.translated !== cur) {
+                const tr = cur.replace(/\S+/, '否');
+                records.set(n, { original: cur, translated: tr });
+                n.nodeValue = tr;
+              }
+            }
+            for (const opt of card.querySelectorAll('[data-testid="ask-question-option-text"]')) {
+              if (opt.closest('[tabindex="-1"]') === card && permissionOptionSafeTexts.has(originalText(opt))) {
+                translateTree(opt, true);
+              }
+            }
+            for (const ed of card.querySelectorAll('[data-testid="permission-target-editor"]')) {
+              if (ed.closest('[tabindex="-1"]') === card) translateAttrs(ed);
+            }
+            for (const dt of card.querySelectorAll('[data-testid="permission-download-details"] dt')) {
+              if (dt.closest('[tabindex="-1"]') === card && dt.firstChild?.nodeType === 3 &&
+                dt.childNodes.length === 1 && !protectedNode(dt.firstChild)) {
+                const label = permissionDownloadLabels[originalText(dt)];
+                const n = dt.firstChild, cur = n.nodeValue;
+                if (label && records.get(n)?.translated !== cur) {
+                  const tr = cur.replace(/\S[\s\S]*\S|\S/, label);
+                  records.set(n, { original: cur, translated: tr });
+                  n.nodeValue = tr;
+                }
+              }
+            }
+            for (const span of card.querySelectorAll('span')) {
+              if (span.closest('[tabindex="-1"]') === card && span.children.length === 0 &&
+                originalText(span) === 'Confirm the command is safe to run outside of the sandbox with full network and disk access.') {
+                translateTree(span);
+              }
+            }
+          }
+        }
+      }
+      // 2.29.1 approval rows have a fixed prompt AND a specific set of controls.
+      // A matching button label alone can also be user/model content.
+      for (const bar of document.querySelectorAll('.flex-wrap')) {
+        if (protectedNode(bar)) continue;
+        const prompt = bar.querySelector(':scope > p,:scope > span > p');
+        if (!prompt || protectedNode(prompt)) continue;
+        const text = originalText(prompt);
+        const buttons = [...bar.querySelectorAll('button')].filter(btn => !protectedNode(btn));
+        const labels = new Set(buttons.map(buttonLeadLabel));
+        const commandInput = text === 'Send command input?' && labels.has('Reject') && labels.has('Accept');
+        const browserPermission = /^Agent needs permission to act on .+$/.test(text) &&
+          ['Configure', 'Deny', 'Always Allow'].every(label => labels.has(label));
+        if (!commandInput && !browserPermission) continue;
+        translateTree(prompt);
+        for (const button of buttons) {
+          if (approvalButtonSafeTexts.has(buttonLeadLabel(button))) translateTree(button);
+        }
+      }
+      for (const btn of document.querySelectorAll('button[aria-label]')) {
+        const rawAria = attrRecords.get(btn)?.['aria-label']?.original ?? btn.getAttribute('aria-label');
+        if (rawAria !== 'Confirm Browser Interaction' || protectedNode(btn)) continue;
+        const bar = btn.parentElement?.parentElement;
+        const prompt = bar?.querySelector(':scope > span > span');
+        const deny = [...(btn.parentElement?.querySelectorAll('button') ?? [])]
+          .find(button => buttonLeadLabel(button) === 'Deny');
+        if (prompt && originalText(prompt) === 'Confirmation required to execute this step' && deny) {
+          translateTree(prompt);
+          translateTree(deny);
+          translateTree(btn);
+          translateAttrs(btn);
+        }
+      }
+      for (const el of document.querySelectorAll('[data-testid="thinking-collapsible-trigger"]')) {
+        if (originalText(el) !== 'Thinking') {
+          translateTree(el);
+          translateAttrs(el);
+        }
+      }
+      // Portal dropdown menus, select popups, popovers, hover cards, and tooltips.
+      for (const el of document.querySelectorAll(POPUPS)) {
+        translateTree(el);
+        for (const sub of el.querySelectorAll('[data-testid="permissions-override-info-icon"]')) {
+          translateAttrs(sub);
+        }
+      }
+      // Right-side Overview panel (only known UI labels, never file/artifact names).
+      for (const panel of document.querySelectorAll('[data-testid="overview-panel"]')) {
+        for (const el of panel.querySelectorAll('span,button,div')) {
+          if (el.children.length === 0 && overviewSafeTexts.has(originalText(el))) {
+            translateTree(el);
+          }
+        }
+      }
+      // P1a: Automations view in main pane (legacy + 2.29.1 main-document views, protecting task names & prompts).
+      for (const el of document.querySelectorAll(
+        '[data-testid="cloud-triggers-view"],[data-testid="trigger-InlineCreator"],[data-testid="automation-detail-view"],' +
+        '[data-testid="new-sidecar-modal"]'
+      )) {
+        const rootEl = el.matches('[data-testid="new-sidecar-modal"]') ? (el.closest('[role="dialog"]') || el) : el;
+        translateTree(rootEl);
+        for (const b of rootEl.querySelectorAll('[aria-label],[title]')) translateAttrs(b);
+      }
+      for (const view of document.querySelectorAll(
+        '[data-testid="sidecars-view"],[data-testid="automation-detail-page"],[data-testid="sidecar-detail"]'
+      )) {
+        for (const sub of view.querySelectorAll(
+          '[data-testid="sidecar-list-empty"],[data-testid="automation-group"],' +
+          '[data-testid="cloud-trigger-renew-all-credentials"],[data-testid="sidecar-create-with-prompt"],' +
+          '[data-testid="sidecar-new-button"],[data-testid="sidecar-detail-run-now"],' +
+          '[data-testid="cloud-trigger-detail-run-now"],[data-testid="automation-instructions-edit"],' +
+          '[data-testid="automation-settings-edit"],[data-testid="automation-settings-save"],' +
+          '[data-testid="automation-settings-cancel"],[data-testid="automation-runs-all"],' +
+          '[data-testid="schedule-editor-panel"],[data-testid="cloud-trigger-editor-panel"]'
+        )) {
+          translateTree(sub);
+        }
+        for (const inp of view.querySelectorAll('input[placeholder],textarea[placeholder]')) {
+          translatePlaceholder(inp);
+        }
+        for (const b of view.querySelectorAll(
+          'button[aria-label],[data-testid="automation-untrusted-warning"],[data-testid="automation-error"],' +
+          '[data-testid="automation-next-run"]'
+        )) {
+          translateAttrs(b);
+        }
+        for (const leaf of view.querySelectorAll('h1,h2,p,span,button,label,div')) {
+          const text = leaf.children.length === 0 ? originalText(leaf) : '';
+          if (text && (automationSafeTexts.has(text) || /^Task "[\s\S]+" not found\.$/.test(text))) {
+            translateTree(leaf);
+          }
+        }
+      }
+      // P1b: Right & bottom panel host toolbars (Terminal, Review/Diff mode selector, Built-in Browser).
+      for (const el of document.querySelectorAll(
+        '[data-testid="bottom-terminal-panel-title"],[data-testid="bottom-terminal-panel-starting"],' +
+        '[data-testid="bottom-terminal-panel-empty"],[data-testid="terminal-tab-connecting"],' +
+        '[data-testid="terminal-password-warning"]'
+      )) {
+        translateTree(el);
+        translateAttrs(el);
+      }
+      for (const el of document.querySelectorAll(
+        '[data-testid="bottom-terminal-panel-new"],[data-testid="bottom-terminal-panel-close"],' +
+        '[data-testid="terminal-add-button"],[data-testid^="bottom-terminal-panel-split-"],' +
+        '[data-testid^="bottom-terminal-panel-kill-"]'
+      )) {
+        translateAttrs(el);
+      }
+      for (const span of document.querySelectorAll('span.font-medium.text-sm')) {
+        if (originalText(span) === 'Terminals') {
+          translateTree(span);
+          const scopeBtn = span.parentElement?.querySelector('button');
+          if (scopeBtn && ['Conversation', 'Project'].includes(originalText(scopeBtn))) translateTree(scopeBtn);
+        }
+      }
+      for (const el of document.querySelectorAll(
+        '[data-testid="diff-view-mode-trigger"],[data-testid="diff-view-mode-option"]'
+      )) {
+        translateTree(el);
+        const header = el.closest('.flex.items-center.text-sm');
+        if (header) {
+          for (const s of header.querySelectorAll(':scope > span.font-medium')) {
+            if (originalText(s) === 'Review') translateTree(s);
+          }
+        }
+      }
+      for (const btn of document.querySelectorAll('button')) {
+        const rawAria = attrRecords.get(btn)?.['aria-label']?.original ?? btn.getAttribute('aria-label');
+        if (rawAria === 'Clear filter') {
+          translateAttrs(btn);
+          const turnChip = btn.parentElement;
+          const header = turnChip?.parentElement;
+          if (turnChip?.firstElementChild && originalText(turnChip.firstElementChild) === 'For Turn') {
+            translateTree(turnChip.firstElementChild);
+          }
+          if (header?.firstElementChild && originalText(header.firstElementChild) === 'Review') {
+            translateTree(header.firstElementChild);
+          }
+        }
+      }
+      for (const reloadBtn of document.querySelectorAll('[data-testid="builtin-browser-reload"]')) {
+        const bar = reloadBtn.parentElement;
+        for (const btn of bar ? bar.querySelectorAll('button') : [reloadBtn]) translateAttrs(btn);
+      }
+      for (const inp of document.querySelectorAll('[data-testid="browser-url-input"]')) {
+        translatePlaceholder(inp);
+        translateAttrs(inp);
+      }
+      for (const btn of document.querySelectorAll(
+        '[data-testid="webview-download-show-in-folder"],[data-testid="webview-download-cancel"],' +
+        '[data-testid="webview-download-remove"],[data-testid="webview-downloads-close"],' +
+        '[data-testid="webview-url-bar-downloads"],' +
+        '[data-testid="conversation-telemetry-icon-button"],[data-testid="conversation-telemetry-indicator"]'
+      )) {
+        translateAttrs(btn);
+      }
+      // Standalone Customizations view in main pane (2.29.1 Marketplace/Installed + legacy /customizations).
+      for (const search of document.querySelectorAll('[data-testid="customizations-search"]')) {
+        const panel = search.closest('.overflow-y-auto') || search.closest('.max-w-4xl')?.parentElement?.parentElement || search.parentElement;
+        if (panel) {
+          translateTree(panel);
+          for (const el of panel.querySelectorAll('[aria-label],[title]')) {
+            if (!el.matches('[data-testid="featured-carousel-member-tile"],[data-testid="featured-carousel-description"]')) {
+              translateAttrs(el);
+            }
+          }
+        }
+      }
+      if (location.pathname === '/customizations') {
+        for (const h2 of document.querySelectorAll('h2')) {
+          if (originalText(h2) === 'Customizations') {
+            const panel = h2.closest('.max-w-2xl')?.parentElement || h2.parentElement;
+            if (panel) translateTree(panel);
+          }
+        }
+      }
+      // Conversation History view (/history and home history section), excluding conversation rows.
+      for (const input of document.querySelectorAll('input[placeholder]')) {
+        const record = placeholderRecords.get(input);
+        const rawPlaceholder = record ? record.original : input.getAttribute('placeholder');
+        if (rawPlaceholder && normalize(rawPlaceholder) === 'Search conversations...') {
+          translatePlaceholder(input);
+          const container = input.closest('.max-w-3xl,.max-w-2xl') || input.parentElement?.parentElement?.parentElement;
+          if (container) {
+            for (const el of container.querySelectorAll('h1,p,button,span')) {
+              if (!el.closest('[role="button"]') && historySafeTexts.has(originalText(el))) {
+                translateTree(el);
+              }
+            }
+          }
+        }
+      }
+      // 2.31.2 verified dialogs, selection pill, Side Questions, Coordinators, File/CSV/LSP & Browser controls.
+      for (const marker of document.querySelectorAll(
+        '[data-testid="create-coordinator-submit"],[data-testid="coordinator-settings-save"],[data-testid="confirm-delete-side-question"]'
+      )) {
+        const dialog = marker.closest('[role="dialog"]');
+        if (dialog) {
+          translateTree(dialog);
+          for (const el of dialog.querySelectorAll('[aria-label],[title]')) {
+            if (!el.matches('[data-testid^="coordinator-icon-option-"],[data-testid^="coordinator-color-option-"]')) {
+              translateAttrs(el);
+            }
+          }
+        }
+      }
+      for (const el of document.querySelectorAll(
+        '[data-testid="selection-quote-button"],[data-testid="selection-btw-button"],' +
+        '[data-testid="selection-comment-button"],[data-testid="selection-popup-quote-button"],' +
+        '[data-testid="side-panel-pending-terminal-tab"],[data-testid="agent-browser-cross-window-banner"],' +
+        '[data-testid="side-question-waiting-status"],[data-testid="side-question-followup-thinking"],' +
+        '[data-testid="file-tree-filter-empty"],[data-testid="csv-file-viewer"],' +
+        '[data-testid="builtin-browser-caa-open-external"],[data-testid="onboarding-auth-code-panel"],' +
+        '[data-testid="automation-model-unavailable"],[data-testid="browser-cert-interstitial"] h1,' +
+        '[data-testid="browser-cert-advanced-button"],[data-testid="browser-cert-back-button"]'
+      )) {
+        translateTree(el);
+      }
+      for (const inp of document.querySelectorAll(
+        '[data-testid="side-question-reply-input"],[data-testid="file-tree-filter-input"],[data-testid="csv-filter-input"]'
+      )) {
+        translatePlaceholder(inp);
+        translateAttrs(inp);
+      }
+      for (const el of document.querySelectorAll(
+        '[data-testid="side-question-reply-send"],[data-testid="side-question-popout"],' +
+        '[data-testid="side-question-tab-stop"],[data-testid="side-question-tab-promote"],' +
+        '[data-testid="side-question-tab-delete"],[data-testid="side-question-resize-handle"],' +
+        '[data-testid="selection-code-search-button"],[data-testid="side-panel-new-tab-button"],' +
+        '[data-testid="comment-card-delete"],[data-testid="comment-card-edit"],' +
+        '[data-testid="coordinator-worker-card"] + button,[data-testid="file-tree-filter-clear"],' +
+        '[data-testid="file-tree-vcs-dot"],[data-testid="csv-filter-clear"],' +
+        '[data-testid="lsp-peek-references-close"],[data-testid="url-security-indicator"]'
+      )) {
+        translateTree(el);
+        translateAttrs(el);
+      }
+      // 2.32.1 verified SSH remote, Create Project wizard, macOS permissions card, provider resource picker, setup script, multi-agent pane & URL draft capsule.
+      for (const marker of document.querySelectorAll(
+        '[data-testid="ssh-connect-dialog"],[data-testid="provider-resource-filter"],' +
+        '[data-testid="google-drive-connect-view"],[data-testid="project-folder-selection-step"],' +
+        '[data-testid="cloud-resource-disclosure-modal"]'
+      )) {
+        const dialog = marker.closest('.z-\\[6000\\],[role="dialog"]') || marker;
+        translateTree(dialog);
+        for (const el of dialog.querySelectorAll('[aria-label],[title]')) translateAttrs(el);
+      }
+      for (const btn of document.querySelectorAll('[data-testid="project-folder-selection-step"] button')) {
+        if (originalText(btn) !== 'project') continue;
+        const prev = btn.previousElementSibling, next = btn.nextElementSibling;
+        const pNode = prev?.firstChild, bNode = btn.firstChild, nNode = next?.firstChild;
+        if ([prev, btn, next].some(el => el?.childNodes.length !== 1) ||
+          [pNode, bNode, nNode].some(n => n?.nodeType !== 3)) continue;
+        const zhPrefix = {
+          'A|exists': '已存在相同的',
+          'A similar|exists': '已存在相似的',
+          'A|with the same folder exists': '已存在使用相同文件夹的',
+          'A|with the same folders exists': '已存在使用相同文件夹组合的'
+        }[`${originalText(prev)}|${originalText(next)}`];
+        if (!zhPrefix) continue;
+        setRecordedText(pNode, zhPrefix);
+        setRecordedText(bNode, '项目');
+        setRecordedText(nNode, '');
+      }
+      for (const dialog of document.querySelectorAll('[role="dialog"]')) {
+        const h2 = dialog.querySelector('h2');
+        const title = h2 ? originalText(h2) : '';
+        if (title === 'Set Project Name') {
+          const inp = dialog.querySelector('form input[type="text"]');
+          const rawPh = inp ? (placeholderRecords.get(inp)?.original ?? inp.getAttribute('placeholder')) : '';
+          if (rawPh && normalize(rawPh) === 'Enter project name...') {
+            translateTree(dialog);
+            for (const el of dialog.querySelectorAll('[aria-label],[title]')) translateAttrs(el);
+          }
+        } else if (title === 'Project already exists') {
+          const btnTexts = new Set([...dialog.querySelectorAll('button')].map(originalText));
+          if (['Back', 'Create New', 'Use Existing'].every(t => btnTexts.has(t))) {
+            translateTree(h2);
+            for (const el of dialog.querySelectorAll('button')) {
+              translateTree(el);
+              translateAttrs(el);
+            }
+            const body = [...dialog.querySelectorAll('div')].find(d =>
+              d.children.length === 1 && d.firstElementChild?.matches('span.font-semibold'));
+            const nodes = body ? [...body.childNodes] : [];
+            if (nodes.length === 5 && nodes[0].nodeType === 3 && nodes[1].nodeType === 1 &&
+              nodes[2].nodeType === 3 && nodes[3].nodeType === 3 && nodes[4].nodeType === 3 &&
+              english(nodes[0]) === 'Project ' && english(nodes[2]) === ' already exists for this ' &&
+              english(nodes[4]) === '. Would you like to continue using it or make a new one?') {
+              const scope = english(nodes[3]);
+              if (scope === 'folder' || scope === 'combination of folders') {
+                setRecordedText(nodes[0], '项目 ');
+                setRecordedText(nodes[2], scope === 'folder'
+                  ? ' 已关联此文件夹。要继续使用该项目，还是创建一个新项目？'
+                  : ' 已关联此文件夹组合。要继续使用该项目，还是创建一个新项目？');
+                setRecordedText(nodes[3], '');
+                setRecordedText(nodes[4], '');
+              }
+            }
+          }
+        }
+      }
+      for (const rootEl of document.querySelectorAll(
+        '[data-testid="computer-permissions-card"],[data-agy-agents-pane],' +
+        '[data-testid="webview-url-bar-draft-capsule"],[data-testid="comment-box"],' +
+        '[data-testid="title-menu-bar"],[data-testid="onboarding-brand-shell"]'
+      )) {
+        translateTree(rootEl);
+        for (const el of rootEl.querySelectorAll('[aria-label],[title]')) translateAttrs(el);
+      }
+      for (const el of document.querySelectorAll(
+        '[data-testid="ssh-machine-switcher"],[data-testid="permissions-selector-trigger"],' +
+        '[data-testid="model-selector-refresh"],[data-testid="setup-script-save-button"],' +
+        '[data-testid="setup-script-validate-button"],[data-testid="setup-script-status"],' +
+        '[data-testid="setup-script-copy-button"]'
+      )) {
+        translateTree(el);
+        translateAttrs(el);
+      }
+      for (const el of document.querySelectorAll(
+        '[data-testid="ssh-host-label"],[data-testid="file-tree-filter-error"],' +
+        '[data-testid="onboarding-switch-to-auth-code"]'
+      )) {
+        translateTree(el);
+      }
+    } finally {
+      observe();
+    }
+  }
+  function observe() {
+    if (!disposed && enabled && document.body) observer.observe(document.body, {
+      childList: true, subtree: true, characterData: true,
+      attributes: true, attributeFilter: ['aria-label', 'title', 'placeholder']
+    });
+  }
+  function schedule() {
+    if (scheduled || disposed || !enabled) return;
+    scheduled = true;
+    window.requestAnimationFrame(() => { scheduled = false; scan(); });
+  }
+  function onMutations(mutations) {
+    if (mutations.some(m => {
+      const el = m.target.nodeType === 1 ? m.target : m.target.parentElement;
+      if (!el) return false;
+      const protectedElement = m.type === 'attributes' && el.matches('input,textarea') ? el.parentElement : el;
+      if (protectedElement?.closest(SKIP)) return false;
+      if (protectedContent(el)) {
+        // Only verified permission options can contain translatable text here.
+        return !!el.closest('[data-testid="ask-question-option-text"]') &&
+          isPermissionCard(el.closest('[tabindex="-1"]'));
+      }
+      if (el.closest(UI_TARGETS) || isPermissionCard(el.closest('[tabindex="-1"]'))) return true;
+      if (m.type !== 'childList') return false;
+      return [...m.addedNodes, ...m.removedNodes].some(node => {
+        if (node.nodeType !== 1 || skippedControl(node) || protectedContent(node)) return false;
+        if (node.matches(UI_TARGETS)) return true;
+        return [...node.querySelectorAll(UI_TARGETS)].some(candidate =>
+          !skippedControl(candidate) && !protectedContent(candidate));
+      });
+    })) schedule();
+  }
+  function restore() {
+    observer?.disconnect();
+    for (const [node, record] of records) {
+      // Do not revert text updated by the application after our last scan.
+      if (node.isConnected && node.nodeValue === record.translated) node.nodeValue = record.original;
+    }
+    records.clear();
+    for (const [el, record] of placeholderRecords) {
+      if (el.isConnected && el.getAttribute('placeholder') === record.translated) {
+        el.setAttribute('placeholder', record.original);
+      }
+    }
+    placeholderRecords.clear();
+    for (const [el, entry] of attrRecords) {
+      if (!el.isConnected) continue;
+      for (const [attr, record] of Object.entries(entry)) {
+        if (el.getAttribute(attr) === record.translated) el.setAttribute(attr, record.original);
+      }
+    }
+    attrRecords.clear();
+  }
+  function setEnabled(value) {
+    enabled = !!value;
+    if (enabled) { scan(); observe(); } else restore();
+    if (control) {
+      control.textContent = enabled ? '中文 · 开' : '中文 · 关';
+      control.setAttribute('aria-pressed', String(enabled));
+    }
+  }
+  function init() {
+    if (disposed || !document.body) return;
+    observer = new MutationObserver(onMutations);
+    control = document.createElement('button');
+    control.type = 'button';
+    control.dataset.antigravityZhControl = VERSION;
+    control.title = '徐老师AI 汉化：点击切换中英文；重启默认开启';
+    control.setAttribute('aria-label', '切换界面汉化');
+    control.style.cssText = 'position:fixed;right:12px;bottom:12px;z-index:2147483647;' +
+      'font:12px system-ui;padding:6px 10px;border:1px solid #aaa;border-radius:20px;' +
+      'background:#fff;color:#222;cursor:pointer;box-shadow:0 2px 8px #0002';
+    control.addEventListener('click', () => setEnabled(!enabled));
+    document.body.appendChild(control);
+    setEnabled(true);
+  }
+  function translateMenu(items, parentId = '') {
+    if (!enabled || !Array.isArray(items)) return items;
+    return items.map(item => {
+      if (!item || typeof item !== 'object') return item;
+      const skipLabel = parentId === 'fork' || (parentId === 'move-to-group' && item.type === 'checkbox');
+      const key = !skipLabel && typeof item.label === 'string' ? normalize(item.label) : '';
+      const target = key ? (Object.hasOwn(dictionary, key) ? dictionary[key] : translateDynamic(key)) : null;
+      const label = target ? item.label.replace(/\S[\s\S]*\S|\S/, target) : item.label;
+      const submenu = Array.isArray(item.submenu) ? translateMenu(item.submenu, item.id || '') : item.submenu;
+      return label === item.label && submenu === item.submenu ? item : { ...item, label, submenu };
+    });
+  }
+  window[KEY] = Object.freeze({
+    version: VERSION,
+    setEnabled,
+    refresh: scan,
+    translateMenu,
+    dispose() {
+      disposed = true;
+      restore();
+      control?.remove();
+      document.removeEventListener('DOMContentLoaded', init);
+      delete window[KEY];
+    }
+  });
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
+  else init();
+})();

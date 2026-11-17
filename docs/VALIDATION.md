@@ -1,0 +1,109 @@
+# 验证记录
+
+## 2026-11-16：Windows 版 Antigravity Desktop 2.32.1 适配与本机验证
+
+- 核查官方 Windows x64 安装目录 `C:\Users\zhang\AppData\Local\Programs\Antigravity`（版本 `2.32.1`）：
+  - 安装目录包含主程序 `Antigravity.exe`（内嵌 Node `v24.22.0`、`Authenticode Status: NotSigned`）与 `resources\app.asar`（SHA-256 `5b493943e67e500638555315594d5b1acbc7a02e6dac3c786651921c1ee8519f`）；
+  - `resources\app.asar` 内的 `dist/preload.js`（`43592a8470cb6c0aa92e5c9879d6093d9e7f50be7d4106c3d4e97bf3c780aaba`）、`dist/main.js`（`b1d133d4aacd31170a23e277008f45b5d4bdc150ae44059a9d27059c8780cd62`）与 `dist/tray.js`（`6c6b0968b45a1c7088e459657d57a9efd72d3733614349095f17b6ee94b47135`）与 macOS / Linux `2.32.1` 逐字节一致；
+  - 主程序 PE 二进制中的 Electron Fuse `EnableEmbeddedAsarIntegrityValidation` 与 `OnlyLoadAppFromAsar` 均为 `0`（关闭，wire `101100011`），更新 ASAR 内部块 SHA-256 后无需修改外层 `.exe` 文件即可正常加载。
+- 扩展 `tools/patcher.py`、`tools/compatibility.json` 与仓库跨平台构建脚本（`.gitattributes`、`package.json`、`.github/workflows/test.yml`）支持 Windows (`win32`) 平台 `doctor`、`install`、`restore`：
+  - 支持常见 Windows 安装路径自动探测、`--app` 自定义路径、Windows 扩展长路径（`\\?\`）规避 260 字符 `MAX_PATH` 限制、目录联接（Junction）与符号链接越界拦截、路径大小写不敏感校验、PowerShell `Get-CimInstance Win32_Process` 运行中进程（`Antigravity.exe` 与 `resources\`）拦截、重命名前脱离应用目录锁定及 UTF-8 编码读写；
+  - 新增 4 项 `WindowsInstallerTests` 单元测试与跨平台联接测试辅助函数。
+- 本机实测验证：
+  - 不传 `--app` 执行 `tools/patcher.py doctor` 自动识别 `C:\Users\zhang\AppData\Local\Programs\Antigravity`（`platform: win32`、`version: 2.32.1`、`patched: false`、`translations: 1873`）；
+  - 宿主运行期间直接对 `C:\Users\zhang\AppData\Local\Programs\Antigravity` 执行 `tools/patcher.py install` 被 `ensure_stopped` 正确拦截并返回退出码 `1`（`Stopped: Quit Antigravity completely before patching or restoring, then retry`）；
+  - 在独立临时目录使用本机官方 `Antigravity.exe` 与 `resources\app.asar` 副本完成 `doctor -> install -> doctor (patched=True) -> patched dist/preload.js|main.js|tray.js JS 语法校验 -> restore -> doctor (patched=False)` 闭环实测，并在本机 `C:\Users\zhang\AppData\Local\Programs\Antigravity` 完成原位 `install` 与重启桌面实机验证：打补丁后 `asar_sha256` 为 `ad95da1968c997a7039280e981dc89a17f6a26bc69432123a5605457dd475e19`，`doctor` 输出 `patched: true`、`state_present: true`，完整保留 `C:\Users\zhang\AppData\Local\Programs\Antigravity.zh-cn-original` 与 `Antigravity.zh-cn-state.json`；
+  - `npm test`（26 项 JavaScript DOM 测试 + 20 项 Python 测试）、`npm run build` 与 `npm run doctor` 在 Windows（Python 3.12.16 / Node v24.22.0）下全部通过。
+
+## 2026-11-15：Linux 版 Antigravity Desktop 2.32.1 适配与 OVH Linux / Instabox XFCE 桌面实机验证
+
+- 核查官方 Linux x64 发行包 `Antigravity.tar.gz`（版本 `2.32.1-6001966350991360`，归档 SHA-256 `4cb2d4fea74a74f17cfe251841b900249c5ad2728b961efdbf729dafae7fe842`）：
+  - 解包目录 `Antigravity-x64/`（或标准安装目录 `/opt/Antigravity`）包含主程序 `antigravity`（Electron `44.9.1`，SHA-256 `3ba9114b7fbaafaf548f72c5d1bc86b7dc81098a85361784359c2c1199625bfc`）、`resources/app.asar`（SHA-256 `5b493943e67e500638555315594d5b1acbc7a02e6dac3c786651921c1ee8519f`）与 `resources/bin/language_server`；
+  - `resources/app.asar` 内全部 721 个打包文件（含 `dist/preload.js`、`dist/main.js`、`dist/tray.js` 与 `web_ui/main.js`）与 macOS `2.32.1` 逐字节完全一致；
+  - 主程序 ELF 二进制中的 Electron Fuse `EnableEmbeddedAsarIntegrityValidation` 与 `OnlyLoadAppFromAsar` 均为 `0`（关闭），更新 ASAR 内部块 SHA-256 后无需修改外层 ELF 签名即可正常启动。
+- 扩展 `tools/patcher.py` 与 `tools/compatibility.json` 支持 Linux 平台 `doctor`、`install`、`restore`（含默认路径自动探测、`--app` 自定义路径、完整备份 `<app>.zh-cn-original` 与状态文件 `<app>.zh-cn-state.json` 校验、`--replace-stale-backup`、运行中进程拦截、防符号链接越界与权限不足清晰报错），保持 macOS 全流程与测试零回归。
+- 词库扩充至 **1,873 条**，新增 Linux 顶部自定义菜单栏（`[data-testid="title-menu-bar"]`：`Workspace` / `View` / `Window`、`Version X.Y.Z`、`Check for Updates`、`Command Palette`、`Minimize`、`Maximize`、`Close`）、首次启动登录引导页（`[data-testid="onboarding-brand-shell"]`）及文件管理器定位操作（`Show in File Manager` / `Reveal in Finder` / `Show in File Explorer`），严格保护应用标题及 SSH/WSL 主机标识。
+- `npm test`：26 项 JavaScript DOM 测试、16 项 Python 测试全部通过；`npm run build` 构建产物与源码一致。
+- 已在 **OVH Linux x86_64** 与 **Instabox `box-856891`（Debian GNU/Linux 13 x86_64 + XFCE 桌面环境 `DISPLAY=:1`）** 两台 Linux 环境对官方 `Antigravity 2.32.1` 完成全闭环实机验证：
+  - 在 `box-856891` 将官方包部署至 `/opt/Antigravity`，不传 `--app` 直接执行 `python3 tools/patcher.py doctor` 自动识别 `/opt/Antigravity`；
+  - 非 root 用户执行 `python3 tools/patcher.py install` 被 `ensure_writable` 拦截并清晰提示 `Insufficient permissions to modify /opt`；`sudo python3 tools/patcher.py install` 原子生成 `/opt/Antigravity.zh-cn-original` 与 `/opt/Antigravity.zh-cn-state.json`（打补丁后 `asar_sha256` 为 `2fd659df4ce5f02a54cd0a6f638a3c319029174795fc76f650eb7f0e9bc08e7a`）；
+  - 在 `DISPLAY=:1`（XFCE 桌面）启动 `/opt/Antigravity/antigravity`，确认 X11 桌面窗口（`929x900`）正常渲染、运行期间 `restore` 被 `ensure_stopped` 正确拦截、桌面截图与 CDP 均确认界面完整汉化（`欢迎使用 Antigravity！` / `通过 Google 继续` / `使用企业账号` / `登录遇到问题？` / `中文 · 开`）且支持一键实时切换还原英文原文（`中文 · 关`）；
+  - 退出应用后执行 `sudo python3 tools/patcher.py restore`，备份与状态文件自动清理，`/opt/Antigravity/resources/app.asar` SHA-256 精确恢复为 `5b493943e67e500638555315594d5b1acbc7a02e6dac3c786651921c1ee8519f`。
+
+## 2026-11-14：2.32.1 版本适配与 Apple Silicon Mac 实机验证
+
+- 完成 Antigravity Desktop 2.32.1 适配，词库扩充至 1,848 条，更新 `tools/compatibility.json` 中 `2.32.1` 的 `dist/preload.js`（`43592a8470cb6c0aa92e5c9879d6093d9e7f50be7d4106c3d4e97bf3c780aaba`）、`dist/main.js`（`b1d133d4aacd31170a23e277008f45b5d4bdc150ae44059a9d27059c8780cd62`）、`dist/tray.js`（`6c6b0968b45a1c7088e459657d57a9efd72d3733614349095f17b6ee94b47135`）SHA-256 指纹与精确补丁规则。
+- 适配 2.32.1 新增界面与控件：创建项目向导弹窗全流程（`project-folder-selection-step` 本地/云端远程切换、文件夹与外部资源选择、云端资源说明弹窗 `cloud-resource-disclosure-modal`、设置项目名称与重复项目确认）、分支与工作树选择器（`Work in a New Worktree` / 历史工作树 / 分支搜索与 `· 新工作树` 后缀）、模型选择器胶囊（`新` / `快速` / `提示`）与用量配额子菜单（`本周额度` / `今日额度` / `5 小时额度` / `剩余 %`）、SSH 远程连接弹窗（`ssh-connect-dialog`）、SSH 机器切换器（`ssh-machine-switcher`）与主机标签（`ssh-host-label`）、macOS 辅助功能与屏幕录制权限引导卡（`computer-permissions-card`）、对话级权限预设选择器与沙盒提示（`permissions-selector-trigger` / `permissions-menu` / `permissions-sandbox-hint`）、外部资源选择器（`provider-resource-filter` / `google-drive-connect-view`）、环境初始化脚本控件（`setup-script-*`）、侧边栏扩展分组与显示筛选（`plugins-section-header` / `plugins-visibility-trigger`）、多智能体实时画面面板（`[data-agy-agents-pane]`）、内置浏览器地址栏评论草稿胶囊（`webview-url-bar-draft-capsule`）与评论草稿编辑框/卡片（`comment-box` / `comment-card` / 下载进度提示）、侧边面板新建/固定标签页控件、文件树搜索失败提示、模型列表刷新状态及初始引导授权码入口。
+- 边界保护加固：严格保护已选本地文件夹与上传文件名称、重复项目提示中的现有项目名、分支选择器中的仓库名与分支名、内置浏览器评论正文、SSH 主机名与自定义配置文件名、WSL 发行版名称、GitHub 仓库条目、侧边栏扩展项名称，以及多智能体实时面板中的窗口标题、智能体名称与光标标签。
+- `npm test`：25 项 JavaScript DOM 测试、12 项 Python 测试全部通过；`npm run build` 构建产物与源码一致。
+- 已在 Apple Silicon Mac 本机 `/Applications/Antigravity.app`（`2.32.1`，官方包 `2.32.1-6001966350991360`，DMG SHA-256 `eb12a620a92b44c8fd7bd4844eeedcc5b145e79fb6dda5b636e4911168e34dec`）完成升级替换、`doctor`、全新 `install`、2.31.2 旧备份 `--replace-stale-backup` 升级路径、`codesign --verify --deep --strict`、Electron 44.9.1 实机进程启动与跨 `contextIsolation` 隔离世界中英文实时切换/边界保护/重启恢复校验，以及完整 `restore` 后的 `spctl --assess --type execute` 原版公证校验（`accepted / Notarized Developer ID`），`2.32.1` 的 `native_ui_tested` 设为 `true`。
+
+## 2026-11-12：2.31.2 版本适配与升级备份替换验证
+
+- 完成 Antigravity Desktop 2.31.2 适配，词库扩充至 1,672 条，更新 `tools/compatibility.json` 中 `2.31.2` 的 `dist/preload.js`、`dist/main.js`、`dist/tray.js` SHA-256 指纹与精确补丁规则。
+- 适配 2.31.2 界面结构变化：新版无折叠按钮权限审批卡（`permission-target-editor`、`permission-download-details` 与「是，仅允许本次下载」选项）、设置中心「浏览器」独立页签与「界面布局 / 对话布局」、项目/运行环境导航、协调器（Coordinators）侧边栏与弹窗、选中引用与追问（`/btw` / Side Question）控件、对话遥测状态按钮、文件树筛选/VCS 状态点、CSV 表格查看器外围工具栏、内置浏览器下载抽屉/证书拦截页/安全信息弹层，以及原生右键菜单 `(Default)` 动态后缀。
+- 边界保护加固：新增保护对话气泡视图（`[data-bubble-side="agent"]`）、进度响应流、追问用户消息、语音转写摘要、浏览器下载目录值、GCP 项目列表、设备选择器选项、网页 `prompt` 文本、下载文件名与打开按钮（`webview-download-open`）、站点域名、LSP 悬停卡片、CSV 表格单元格、协调器子任务卡片与权限下载详情值（`dd`）；修复动态插入受控 `input` / `textarea` 时被 `SKIP` 拦截导致不触发扫描的问题。
+- 安装器增强：针对应用自动更新后遗留旧版本 `.zh-cn-original` 备份与状态记录的场景，`doctor` 输出 `stale_backup_version`，`install` 新增显式 `--replace-stale-backup` 参数（仅在旧备份校验通过、版本号不同且当前应用为未打补丁的 Google 签名公证包时事务性替换，失败自动回滚）。
+- `npm test`：22 项 JavaScript DOM 测试、12 项 Python 测试全部通过；`npm run build` 构建产物与源码一致。
+- 已在本机 `/Applications/Antigravity.app`（2.31.2）完成 `--replace-stale-backup` 升级安装、完整 `restore`、重新安装、`codesign --verify --deep --strict` 签名校验及实机界面核验（含原版 2.29.1 / 2.31.2 `spctl --assess --type execute` 公证校验），`2.31.2` 的 `native_ui_tested` 设为 `true`。
+
+## 2026-11-11：2.29.1 版本适配与方案 C 扩展验证
+
+- 完成 Antigravity Desktop 2.29.1 常规适配与方案 C（P0 + P1 + P2）扩展，词库扩充至 1,397 条。
+- 覆盖范围扩展至：设置页（含语音模式、对话设置与快捷键新增项）、主面板独立「自动化（Automations）」与「自定义配置（Customizations）」市场/已安装页、对话流权限审批卡片（严格结构校验）、右侧面板外围工具栏（终端、Diff、内置浏览器、文件树）、Electron 原生右键菜单（通过 `preload.js` 的 `showContextMenu` 拦截转发，支持语言开关实时切换并保护自定义分组名）及原生退出确认弹窗与状态栏托盘（`main.js` / `tray.js` 精确 SHA-256 校验替换）。
+- 边界保护加固：问答问题、选项和预览属于内容；权限交互复用问答组件，固定选项分别对应 ONCE、CONVERSATION、GLOBAL。权限卡须同时具备问答头、权限详情控件和专用输入占位文案；缺少标记时保留选项原文。包含动态命令目标的授权选项、插件/技能专名、会话标题及代码/文件路径保留原文。
+- 修复多文本子节点拼接（`translateMultiTextElement`）与 JSX 行内元素两侧纯空格分隔节点（`inlineConcat`）的识别边界。
+- `npm test`：21 项 JavaScript DOM 测试、11 项 Python 测试全部通过；`npm run build` 构建产物与源码一致。
+- 已在本机 `/Applications/Antigravity.app`（2.29.1）完成完整安装、还原、再安装及 `codesign --verify --deep --strict` 校验，实机验证通过，`2.29.1` 的 `native_ui_tested` 设为 `true`。
+
+以下为历史验证记录。
+
+日期：2026-10-11。
+
+## v0.1.1 修订范围
+
+v0.1.1 修订项目文档及版本标识。词库、翻译逻辑、安装和还原流程与 v0.1.0 一致。本次重新运行 8 项 JavaScript 测试、11 项 Python 测试及构建一致性检查；原生应用操作记录与截图采集于 v0.1.0，未重复安装。
+
+## 自动化测试
+
+- 8 项 JavaScript DOM 测试：设置翻译、精确原文恢复、动态文本与节点更新、关闭后保留应用新内容、不翻译外部登录页、不翻译聊天和编辑内容、重复注入保护、词库格式。
+- 11 项 Python 测试：ASAR 更新及其他文件保留、损坏与越界拒绝、链接与非内联文件拒绝、只读检查、版本和路径检查、签名失败保留原版、安装和完整还原、更新冲突拒绝覆盖、中断恢复、运行中和确认参数检查。
+- Python 安装事务测试使用合成 `.app` 与模拟签名命令；不能据此声称 Apple 已公证补丁。
+- 本机原版 Antigravity Desktop 2.22.0 的只读诊断通过，preload SHA-256 与兼容表一致。
+
+- GitHub Actions 的 macOS / Ubuntu 两个平台均通过 19 项测试和构建一致性检查：[运行记录](https://github.com/TeacherXuAI/antigravity-zh-cn/actions/runs/38126500259)。
+
+## 原生应用实测
+
+实机环境：macOS 26.5.2，Apple Silicon，Antigravity Desktop 2.22.0。
+
+- 原版包签名、Apple 公证、ASAR 校验和：通过。
+- 首轮只替换外层签名并保留动态库校验：启动失败，系统报告主程序与 Electron 框架 Team ID 不一致。
+- 执行完整还原后，原版 ASAR 与代码签名校验：通过；原版已重新启动并进入正常主界面。
+- 已增加单独的 `--allow-local-library-loading` 同意参数，明确记录应用级动态库校验例外。缺少参数时停止安装。
+- 经本机用户明确同意后，应用级动态库校验例外模式：原生启动成功。
+- 四个目标设置页（通用、应用、外观、模型与用量）：已通过原生辅助功能树和界面检查，词库命中的静态文本实际显示中文。
+- 外观页代码示例、颜色输入值、模型名称、版本号、账号信息及原有开关状态：保持原样。
+- 在主界面关闭汉化：导航恢复英文，重新进入设置页亦为英文。
+- 完全退出并重启：主界面恢复中文导航，中文开关默认开启。
+- 对带动态库例外的修改版执行完整还原：原始 ASAR 的 SHA-256 完全一致；`codesign --verify --deep --strict` 通过；`spctl --assess --type execute` 返回 `accepted / Notarized Developer ID`；新增动态库例外权限已移除。
+- 已再次安装补丁，留存完整原版备份。
+
+## 实机截图
+
+- 新增应用、通用、外观三组原生窗口的「汉化关闭 / 汉化开启」截图，共 6 张单图、3 张对比图。
+- 单图仅遮挡账号区域；逐像素核对遮挡外的解码 RGB 值保持一致。截图元数据已移除。
+- 截图保留实际英文残留、版本号、原有开关、颜色值和代码示例。
+- [完整图集与采集方法](SCREENSHOTS.md)。对照来自同一份修改版的开关状态，不等同于重新安装原版的实验。
+
+## 已知交互限制
+
+- 中英文开关位于主界面，设置弹窗打开时不在其辅助功能焦点范围内；切换时先关闭设置面板。
+- 部分长说明、加载状态和图标提示仍为英文，不是全界面翻译。
+- 完整原版备份保留相同 Bundle ID。使用 `/Applications/Antigravity.app` 明确启动修改版，不要双击备份；部分按 Bundle ID 查找的软件可能提示有多个副本。
+
+以上为这一台机器、这一版本的实测，不代表其他系统和版本均兼容。
+
+## 未验证范围
+
+Windows arm64、Intel Mac、Linux arm64、其他产品版本、企业受管设备策略、完整对话执行流程、自动更新后的长期行为、全部辅助功能和下拉弹出层。
