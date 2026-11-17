@@ -1,5 +1,27 @@
 # 更新日志
 
+## [3.0.0] - 2026-11-17
+
+### 架构重构与新增特性
+
+- **双模汉化架构（零改包动态守护 + 静态 ASAR 安全补丁）**：
+  - **模式一（推荐）：零改包 CDP 动态守护（`agy-zh run` / `agy-zh shortcut` / `agy-zh stop`）**：完全不修改 `Antigravity.app` 原包，保留 Google 官方签名与 Apple 公证，客户端自动更新不掉汉化；通过 `127.0.0.1` 回环调试端口（绝不开启 `--remote-allow-origins=*`）自动发现并幂等注入主界面与内置 Swarm 子帧，支持一键生成 macOS `Antigravity 中文.app`、Windows 桌面 `.lnk` 及 Linux `.desktop` 快捷方式；
+  - **模式二：静态 ASAR 安全补丁（`agy-zh install` / `agy-zh restore`）**：保留内存级 ASAR 分块哈希重写与签名校验；macOS 升级为 APFS `copyfile` 写时复制秒级克隆；全面覆盖主界面、Swarm 面板（Electron `did-frame-finish-load` 钩子）、原生托盘、退出确认框、更新提示与会话右键菜单；
+  - **分层弹性版本兼容（Schema v2）**：`tools/compatibility.json` 在保留 `2.22.0`–`2.32.1` 精确指纹校验的同时引入 `anchor_rules` 结构锚点弹性注入，对未收录新版 Antigravity Desktop 自动适配（并严格拒绝一切 Antigravity IDE / VS Code 包）；
+  - **100% 兼容存量 v2 备份**：统一命名空间为 `__antigravity_chinese_patch__`，兼容识别旧版 `/* TeacherXuAI Antigravity Chinese UI` 标记与 `schema: 1` 状态记录，老用户可直接 `doctor` 或 `restore` 无损还原。
+- **Rust 单文件跨平台宿主 `agy-zh`**：
+  - 移除运行期 `Python + Node.js` 双栈依赖，构建零外部运行时依赖的纯 Rust 单文件二进制（内嵌确定性前端载荷，采用无 TLS 本地 `tungstenite` WebSocket 与原生系统接口），支持子命令与无参交互式中文菜单；
+  - CI/CD 全面升级为 Ubuntu / macOS / Windows 测试矩阵与 6 架构单文件 Release 自动分发（macOS arm64/x64、Linux x64/arm64、Windows x64/arm64）。
+- **内置 Swarm 面板作用域隔离汉化**：
+  - 新增 `locales/scoped/swarm.json`（**142 条**精确词条 + **7 条**正则）与 `src/swarm/` 独立运行时，仅匹配 `plugin://swarm--swarm_board-<id>/` 帧及 `[data-testid="swarm-tabs"]` / `[data-testid="swarm-empty-state"]` 结构标记，严格保护 `#ov-frame`、`#raw`、`#swarm-title`、`.msg-body`、成员名、`@all`、`/swarm` 命令及讲述者自定义文案，并通过 `postMessage` 与主窗口实时同步中英文切换。
+- **三层模块化词库、6 道编译门禁与漂移扫描**：
+  - 将原扁平词典拆分为 `locales/src/core/`、`locales/src/views/`、`locales/src/rules/patterns.json`（主界面 **1,873 条**精确词条 + **47 条**规则）与 `locales/scoped/swarm.json`，将原单文件运行时拆分为 `src/shared/`、`src/runtime/` 与 `src/swarm/`；
+  - 新增 `tools/build-payloads.mjs`（Trim/Non-Empty、Duplicate Key、ASCII/Markup、Regex Syntax/Double-Escape、Capture-Group Invariant、Deterministic Bundle 共 6 道门禁）与 `tools/drift-detector.mjs`（官方 JS Bundle / ASAR 漂移与假阳性扫描）。
+- **新一代交互与自定义词表**：
+  - 升级为可拖拽记忆位置的新版悬浮控制球，支持可视区边界吸附与多窗口 `localStorage` 状态同步；
+  - 右键或双击悬浮球打开配置菜单，新增**「选项名保留英文」**预设开关（支持保留 `This Conversation`、`Request Review`、`Default`、`Auto`、`Turbo`、`High`、`Medium`、`Low` 英文选项名）；
+  - 新增可选 `custom-translations.txt` 用户自定义词表（支持译文覆写与置空强制保留英文，带软链、大小及权限校验）。
+
 ## [2.32.1.3] - 2026-11-16
 
 ### 新增与改进

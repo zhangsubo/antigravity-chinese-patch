@@ -1,9 +1,10 @@
-const {test} = require('node:test');
-const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const {JSDOM} = require('jsdom');
-const dictionary = JSON.parse(fs.readFileSync('locales/zh-CN.json','utf8'));
-const source = fs.readFileSync('src/runtime.js','utf8').replace('/*__DICTIONARY__*/ {}',JSON.stringify(dictionary));
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import { JSDOM } from 'jsdom';
+const bundle = JSON.parse(fs.readFileSync('dist/zh-CN.bundle.json', 'utf8'));
+const dictionary = bundle.exact;
+const source = fs.readFileSync('dist/desktop-runtime.js', 'utf8');
 const html = `<aside aria-label="Sidebar"><a href="/">New Conversation</a><button aria-label="Settings">Settings</button><button>General</button></aside>
 <main><div id="chat">Settings</div><pre>General</pre><textarea>Appearance</textarea></main>
 <section aria-label="Settings"><h1>Settings</h1><nav><button>General</button><button>Application</button><button>Appearance</button></nav><article><h2>General</h2><p id="copy">Global Permissions</p><button id="account"><span>General</span><span>person@example.invalid</span></button><pre>Settings</pre><code>Default</code><input value="General"><div contenteditable="true">Settings</div><div translate="no">General</div><div data-no-translate>Settings</div></article></section>`;
@@ -12,7 +13,7 @@ function create(body=html,url='http://127.0.0.1:12345/') {
  dom.window.eval(source);
  dom.window.document.dispatchEvent(new dom.window.Event('DOMContentLoaded'));
  const close = dom.window.close.bind(dom.window);
- dom.window.close = () => { dom.window.__teacherxu_antigravity_zh__?.dispose(); close(); };
+ dom.window.close = () => { dom.window.__antigravity_chinese_patch__?.dispose(); close(); };
  return dom;
 }
 const wait = () => new Promise(r=>setTimeout(r,60));
@@ -34,13 +35,13 @@ test('translates settings and named navigation but leaves chat, code, account an
 test('toggle and dispose restore exact whitespace and all original text',()=>{
  const dom=create(html.replace('id="copy">Global Permissions','id="copy">  Global Permissions  ')), w=dom.window,d=w.document;
  assert.equal(d.querySelector('#copy').textContent,'  全局权限  ');
- w.__teacherxu_antigravity_zh__.setEnabled(false);
+ w.__antigravity_chinese_patch__.setEnabled(false);
  assert.equal(d.querySelector('#copy').textContent,'  Global Permissions  ');
- w.__teacherxu_antigravity_zh__.setEnabled(true);
+ w.__antigravity_chinese_patch__.setEnabled(true);
  assert.equal(d.querySelector('#copy').textContent,'  全局权限  ');
- w.__teacherxu_antigravity_zh__.dispose();
+ w.__antigravity_chinese_patch__.dispose();
  assert.equal(d.querySelector('h1').textContent,'Settings');
- assert.equal(d.querySelector('[data-antigravity-zh-control]'),null);
+ assert.equal(d.querySelector('[data-agy-zh-control]'),null);
  dom.window.close();
 });
 test('handles React text updates, new nodes, and removed settings panels', async()=>{
@@ -58,7 +59,7 @@ test('handles React text updates, new nodes, and removed settings panels', async
 test('does not restore stale data when the app updates text before toggle',()=>{
  const dom=create(),w=dom.window,d=w.document;
  d.querySelector('#copy').textContent='New server value';
- w.__teacherxu_antigravity_zh__.setEnabled(false);
+ w.__antigravity_chinese_patch__.setEnabled(false);
  assert.equal(d.querySelector('#copy').textContent,'New server value');dom.window.close();
 });
 test('does not translate unrelated dialogs or sign-in websites',()=>{
@@ -66,7 +67,7 @@ test('does not translate unrelated dialogs or sign-in websites',()=>{
  assert.equal(dom.window.document.querySelector('p').textContent,'General');dom.window.close();
  const auth=create(html,'https://accounts.google.com/');
  assert.equal(auth.window.document.querySelector('h1').textContent,'Settings');
- assert.equal(auth.window.__teacherxu_antigravity_zh__,undefined);auth.window.close();
+ assert.equal(auth.window.__antigravity_chinese_patch__,undefined);auth.window.close();
 });
 test('does not translate custom skill names on Conversations settings screen',()=>{
  const dom=create(html.replace('<h2>General</h2>','<h2>Conversations</h2>').replace('id="copy">Global Permissions','id="copy">Default'));
@@ -75,12 +76,12 @@ test('does not translate custom skill names on Conversations settings screen',()
 test('installing payload twice creates only one switch',()=>{
  const pkg=JSON.parse(fs.readFileSync('package.json','utf8')),lock=JSON.parse(fs.readFileSync('package-lock.json','utf8'));
  const compat=JSON.parse(fs.readFileSync('tools/compatibility.json','utf8'));
- assert.match(pkg.version,/^\d+\.\d+\.\d+\.[1-9]\d*$/);
- assert.ok(Object.hasOwn(compat.versions,pkg.version.split('.').slice(0,3).join('.')));
+ assert.match(pkg.version, /^\d+\.\d+\.\d+$/);
+ assert.ok(compat.verified_versions && Object.keys(compat.verified_versions).length >= 5);
  assert.equal(lock.version,pkg.version);assert.equal(lock.packages[''].version,pkg.version);
  const dom=create();dom.window.eval(source);
- assert.equal(dom.window.__teacherxu_antigravity_zh__.version,pkg.version);
- assert.equal(dom.window.document.querySelectorAll('[data-antigravity-zh-control]').length,1);dom.window.close();
+ assert.equal(dom.window.__antigravity_chinese_patch__.version,pkg.version);
+ assert.equal(dom.window.document.querySelectorAll('[data-agy-zh-control]').length,1);dom.window.close();
 });
 test('translation dictionary is plain exact-match strings with no markup',()=>{
  for (const [en,zh] of Object.entries(dictionary)) {
@@ -119,7 +120,7 @@ test('translates 2.23.0 sidebar sections, testid buttons, project selector, and 
  assert.equal(d.querySelector('main h1').textContent,'对话历史');
  assert.equal(d.querySelector('main input').getAttribute('placeholder'),'搜索对话...');
  assert.equal(d.querySelector('main [role="button"] span').textContent,'Conversation History');
- w.__teacherxu_antigravity_zh__.setEnabled(false);
+ w.__antigravity_chinese_patch__.setEnabled(false);
  assert.equal(d.querySelector('main input').getAttribute('placeholder'),'Search conversations...');
  dom.window.close();
 });
@@ -144,7 +145,7 @@ test('translates dynamic quota refresh strings, plan description, chat toolbar, 
  assert.equal(d.querySelector('#mode-turbo').textContent,'极速模式（Turbo）');
  assert.equal(d.querySelector('#ov-title').textContent,'概览');
  assert.equal(d.querySelector('#ov-file').textContent,'main.js');
- w.__teacherxu_antigravity_zh__.setEnabled(false);
+ w.__antigravity_chinese_patch__.setEnabled(false);
  assert.equal(d.querySelector('#q1').textContent,'You have used some of your weekly limit, it will fully refresh in 3 days, 20 hours.');
  dom.window.close();
 });
@@ -163,7 +164,7 @@ test('translates portal dropdown menus and changed files bar while protecting pr
  assert.equal(d.querySelector('[data-testid="permissions-project-options"]').textContent,'请求审核每条命令都需要你的批准。');
  assert.equal(d.querySelector('[data-testid="project-selector-item"]').textContent,'General');
  assert.equal(d.querySelector('[data-model-base]').textContent,'Default');
- w.__teacherxu_antigravity_zh__.setEnabled(false);
+ w.__antigravity_chinese_patch__.setEnabled(false);
  assert.equal(d.querySelector('#fc-count').textContent,'1 file changed');
  dom.window.close();
 });
@@ -194,7 +195,7 @@ test('translates 2.29.1 narrow settings, experimental labs, hover cards, concier
  assert.equal(d.querySelector('[data-hover-card-popup]').textContent,'上下文与配额指示器');
  assert.equal(d.querySelector('#toast-msg').textContent,'Files');
  assert.equal(d.querySelector('#ov-cos').textContent,'幕僚长面板');
- w.__teacherxu_antigravity_zh__.setEnabled(false);
+ w.__antigravity_chinese_patch__.setEnabled(false);
  assert.equal(d.querySelector('#lab').textContent,'Inline Actions (Experimental)');
  dom.window.close();
 });
@@ -269,7 +270,7 @@ test('P0: translates approval cards, AskQuestion chrome, Plan Proceed, and Thoug
  d.querySelector('#stream-code').firstChild.nodeValue='Settings';
  await wait();
  assert.equal(d.querySelector('#stream-code').textContent,'Settings');
- w.__teacherxu_antigravity_zh__.setEnabled(false);
+ w.__antigravity_chinese_patch__.setEnabled(false);
  assert.equal(d.querySelector('#perm-once').textContent,'Allow Once');
  assert.equal(d.querySelector('[data-testid="ask-question-collapse-button"]').getAttribute('aria-label'),'Collapse questionnaire');
  dom.window.close();
@@ -369,7 +370,7 @@ test('P1: translates 2.29.1 Automations main-document views and right/bottom pan
  assert.equal(d.querySelector('[data-testid="browser-url-input"]').getAttribute('aria-label'),'地址栏');
  assert.equal(d.querySelector('[data-testid="browser-url-display"]').textContent,'Settings');
  assert.equal(d.querySelector('[data-testid="webview-url-bar-open-external"]').getAttribute('title'),'在外部浏览器中打开');
- w.__teacherxu_antigravity_zh__.setEnabled(false);
+ w.__antigravity_chinese_patch__.setEnabled(false);
  assert.equal(d.querySelector('[data-testid="builtin-browser-reload"]').getAttribute('title'),'Reload');
  assert.equal(d.querySelector('[data-testid="builtin-browser-reload"]').getAttribute('aria-label'),'Reload');
  assert.equal(d.querySelector('[data-testid="bottom-terminal-panel-new"]').getAttribute('aria-label'),'New Terminal');
@@ -435,7 +436,7 @@ test('P0: permission scopes keep handlers, dynamic targets, and exact restoratio
  button.parentElement.append(lateOption);await wait();
  assert.equal(lateOption.textContent,'是，保存为全局规则');
  d.querySelector('#once').firstChild.nodeValue='Application supplied new content';
- w.__teacherxu_antigravity_zh__.setEnabled(false);
+ w.__antigravity_chinese_patch__.setEnabled(false);
  assert.equal(d.querySelector('#once').textContent,'Application supplied new content');
  assert.equal(d.querySelector('#conversation').textContent,'Yes, and always allow in this conversation');
  assert.equal(d.querySelector('#global').textContent,'Yes, and always allow');
@@ -455,7 +456,7 @@ test('P0: browser confirmation requires its prompt and paired deny control',()=>
  assert.equal(button.textContent,dictionary.Confirm);
  assert.equal(button.getAttribute('aria-label'),'确认浏览器操作');
  assert.equal(d.querySelector('#unverified-confirm').textContent,'Confirm');
- w.__teacherxu_antigravity_zh__.setEnabled(false);
+ w.__antigravity_chinese_patch__.setEnabled(false);
  assert.equal(button.textContent,'Confirm');assert.equal(button.getAttribute('aria-label'),'Confirm Browser Interaction');
  dom.window.close();
 });
@@ -499,7 +500,7 @@ test('translates React split text nodes as complete phrases and guards against h
  const mixedDelete=addSplit(d.createElement('div'),'Delete ',bold,'?');
  const colonPrefix=addSplit(d.createElement('span'),'Location: ','General');
  art.append(unknownNo,unknownOpen,mixedDelete,colonPrefix);
- w.__teacherxu_antigravity_zh__.refresh();
+ w.__antigravity_chinese_patch__.refresh();
  assert.equal(emptyTitle.textContent,'暂无自动化任务');
  assert.equal(emptyTitle.childNodes.length,3);
  assert.equal(emptySearch.textContent,'没有匹配“Settings”的自动化任务。');
@@ -512,7 +513,7 @@ test('translates React split text nodes as complete phrases and guards against h
  emptySearch.childNodes[3].nodeValue='bar';
  await wait();
  assert.equal(emptySearch.textContent,'没有匹配“bar”的自动化任务。');
- w.__teacherxu_antigravity_zh__.setEnabled(false);
+ w.__antigravity_chinese_patch__.setEnabled(false);
  assert.equal(emptyTitle.textContent,'No automations yet');
  assert.equal(emptySearch.textContent,'No automations match “bar”.');
  assert.equal(backTo.textContent,'Back to Automations');
@@ -542,7 +543,7 @@ test('translates 2.29.1 Conversations subtitle, Voice mode settings & picker, Th
  </div>`);
  const w=dom.window,d=w.document,useBtn=d.querySelector('[data-testid="voice-picker-use"]');
  useBtn.append(d.createTextNode('Use '),d.createTextNode('Fola'));
- w.__teacherxu_antigravity_zh__.refresh();
+ w.__antigravity_chinese_patch__.refresh();
  assert.equal(d.querySelector('#this-comp').textContent,'此电脑');
  assert.equal(d.querySelector('#vm-title').textContent,'语音模式');
  assert.equal(d.querySelector('#vm-desc').textContent,'语音模式使用的音色，由 Gemini Live 提供支持。');
@@ -585,7 +586,7 @@ test('translates native context menu items, Archive Conversation tooltip, 2.29.1
  permSub.append(d.createTextNode('Configure what the agent can do in local and remote conversations.'),d.createTextNode(' '),lm,d.createTextNode('.'));
  const planFyi=d.querySelector('#plan-fyi'),c1=d.createElement('code'),c2=d.createElement('code');c1.textContent='/';c2.textContent='plan';
  planFyi.append(d.createTextNode('Type'),d.createTextNode(' '),c1,d.createTextNode(' '),d.createTextNode('and select'),d.createTextNode(' '),c2,d.createTextNode(' '),d.createTextNode('to have the agent generate a plan.'));
- w.__teacherxu_antigravity_zh__.refresh();
+ w.__antigravity_chinese_patch__.refresh();
  assert.equal(d.querySelector('#arc-tip').textContent,'归档对话⌘E');
  assert.equal(d.querySelector('[data-testid="conversation-archive-button"]').getAttribute('aria-label'),'归档对话');
  assert.equal(d.querySelector('#sb-see-all').textContent,'查看全部 (18)');
@@ -614,13 +615,13 @@ test('translates native context menu items, Archive Conversation tooltip, 2.29.1
   {id:'archive',label:'Archive'},
   {id:'delete',label:'Delete'}
  ];
- const zhMenu=w.__teacherxu_antigravity_zh__.translateMenu(menu);
+ const zhMenu=w.__antigravity_chinese_patch__.translateMenu(menu);
  assert.deepEqual(zhMenu.map(i=>i.label),['重命名','置顶','标为未读','复制','分屏打开','移至分组','归档','删除']);
  assert.deepEqual(zhMenu[3].submenu.map(i=>i.label),['对话名称','工作区名称']);
  assert.deepEqual(zhMenu[4].submenu.map(i=>i.label),['向右分屏','替换为新对话']);
  assert.deepEqual(zhMenu[5].submenu.map(i=>i.label),['General','新建分组']);
- w.__teacherxu_antigravity_zh__.setEnabled(false);
- assert.equal(w.__teacherxu_antigravity_zh__.translateMenu(menu),menu);
+ w.__antigravity_chinese_patch__.setEnabled(false);
+ assert.equal(w.__antigravity_chinese_patch__.translateMenu(menu),menu);
  dom.window.close();
 });
 
@@ -740,7 +741,7 @@ test('translates 2.31.2 PermissionCard, Browser settings, Coordinators, Side Que
  bizDoc.append(d.createTextNode('For Antigravity Business consumption options, see'),d.createTextNode(' '),docLink,d.createTextNode('.'));
  const permInherit=d.querySelector('#perm-inherit'),gpSpan=d.createElement('span');gpSpan.textContent='Global Permissions';
  permInherit.append(d.createTextNode('Also includes'),d.createTextNode(' '),gpSpan,d.createTextNode(' '),d.createTextNode('when working '),d.createTextNode('in these conversations'),d.createTextNode('.'));
- w.__teacherxu_antigravity_zh__.refresh();
+ w.__antigravity_chinese_patch__.refresh();
  assert.equal(d.querySelector('[data-testid="coordinator-section-header"] h2').textContent,'协调器');
  assert.equal(d.querySelector('[data-testid="new-coordinator-button"]').getAttribute('aria-label'),'新建协调器');
  assert.equal(d.querySelector('[data-testid="settings-nav-item-Browser"]').textContent,'浏览器');
@@ -819,7 +820,7 @@ test('translates 2.31.2 PermissionCard, Browser settings, Coordinators, Side Que
  assert.equal(d.querySelector('#lsp-hover').textContent,'General');
  assert.equal(d.querySelector('#vt-lead').textContent,'Settings');
  const linkMenu=[{id:'open-side',label:'Side Panel (Default)'},{id:'open-ext',label:'External Browser'}];
- assert.deepEqual(w.__teacherxu_antigravity_zh__.translateMenu(linkMenu).map(i=>i.label),['侧边面板（默认）','外部浏览器']);
+ assert.deepEqual(w.__antigravity_chinese_patch__.translateMenu(linkMenu).map(i=>i.label),['侧边面板（默认）','外部浏览器']);
  await wait();
  const dynInput=d.createElement('input');
  dynInput.setAttribute('data-testid','file-tree-filter-input');
@@ -834,7 +835,7 @@ test('translates 2.31.2 PermissionCard, Browser settings, Coordinators, Side Que
  d.querySelector('#agent-bubble p').firstChild.nodeValue='General';
  d.querySelector('#prog-resp').firstChild.nodeValue='Settings';
  await wait();assert.equal(frames,0);
- w.__teacherxu_antigravity_zh__.setEnabled(false);
+ w.__antigravity_chinese_patch__.setEnabled(false);
  assert.equal(d.querySelector('#dt-type').textContent,'Type');
  assert.equal(d.querySelector('[data-testid="csv-row-count"]').textContent,'12 / 48 rows');
  assert.equal(d.querySelector('[data-testid="conversation-telemetry-icon-button"]').getAttribute('aria-label'),'Telemetry will be enabled for this conversation; click to disable.');
@@ -964,8 +965,8 @@ test('2.32.1 SSH remote, macOS permissions card, resource picker, setup script, 
  const cpHint=d.querySelector('#cp-hint'),openStrong=d.createElement('strong');
  openStrong.textContent='Open ↗';
  cpHint.append(d.createTextNode('Click '),openStrong,d.createTextNode(' to open macOS Privacy & Security.'));
- w.__teacherxu_antigravity_zh__.refresh();
- assert.equal(w.__teacherxu_antigravity_zh__.version,'2.32.1.3');
+ w.__antigravity_chinese_patch__.refresh();
+ assert.equal(w.__antigravity_chinese_patch__.version, '3.0.0');
  assert.equal(d.querySelector('[data-testid="plugins-section-header"] h2').textContent,'扩展');
  assert.equal(d.querySelector('[data-testid="plugins-visibility-trigger"]').getAttribute('aria-label'),'显示或隐藏扩展');
  assert.equal(d.querySelector('#ext-item').textContent,'Settings');
@@ -1073,7 +1074,7 @@ test('2.32.1 SSH remote, macOS permissions card, resource picker, setup script, 
  assert.equal(d.querySelector('#mdl-load').textContent,'正在加载模型...');
  assert.equal(d.querySelector('#mdl-ref').textContent,'刷新');
  assert.equal(d.querySelector('#onb-auth').textContent,'登录遇到问题？输入授权码');
- w.__teacherxu_antigravity_zh__.setEnabled(false);
+ w.__antigravity_chinese_patch__.setEnabled(false);
  assert.equal(d.querySelector('[data-testid="ssh-host-label"]').textContent,'On prod-host');
  assert.equal(d.querySelector('#agy-tile-btn').getAttribute('title'),'Focus this tile');
  assert.equal(d.querySelector('#draft-cnt').textContent,'2 Drafts');
@@ -1152,7 +1153,7 @@ test('2.32.1 Create Project wizard (folder/resource selection, Set Project Name,
   d.createTextNode('folder'),
   d.createTextNode('. Would you like to continue using it or make a new one?')
  );
- w.__teacherxu_antigravity_zh__.refresh();
+ w.__antigravity_chinese_patch__.refresh();
 
  assert.equal(d.querySelector('[data-testid="sidebar-add-project-button"]').getAttribute('aria-label'),'新建项目');
  assert.equal(d.querySelector('#wiz-title').textContent,'创建项目');
@@ -1191,11 +1192,11 @@ test('2.32.1 Create Project wizard (folder/resource selection, Set Project Name,
  assert.equal(d.querySelector('#add-lbl').textContent,'添加资源');
  assert.equal(d.querySelector('#dup-inline').textContent,'已存在使用相同文件夹组合的项目');
 
- w.__teacherxu_antigravity_zh__.setEnabled(false);
+ w.__antigravity_chinese_patch__.setEnabled(false);
  assert.equal(d.querySelector('#wiz-title').textContent,'Create Project');
  assert.equal(d.querySelector('#dup-inline').textContent,'Aprojectwith the same folders exists');
  assert.equal(dupMsg.textContent,'Project Settings already exists for this folder. Would you like to continue using it or make a new one?');
- w.__teacherxu_antigravity_zh__.setEnabled(true);
+ w.__antigravity_chinese_patch__.setEnabled(true);
 
  // Transition wizard dialog to Step 2: Set Project Name (G2c)
  d.querySelector('#wiz-title').firstChild.nodeValue='Set Project Name';
@@ -1212,7 +1213,7 @@ test('2.32.1 Create Project wizard (folder/resource selection, Set Project Name,
  assert.equal(d.querySelector('#pname-back').textContent,'返回');
  assert.equal(d.querySelector('#pname-create').textContent,'创建');
 
- w.__teacherxu_antigravity_zh__.setEnabled(false);
+ w.__antigravity_chinese_patch__.setEnabled(false);
  assert.equal(d.querySelector('#wiz-title').textContent,'Set Project Name');
  assert.equal(d.querySelector('#pname-inp').getAttribute('placeholder'),'Enter project name...');
  dom.window.close();
@@ -1272,7 +1273,7 @@ test('2.32.1 branch/worktree selector, model usage limits & pills, browser comme
  d.querySelector('#env-suf').append(d.createTextNode('· '),d.createTextNode('Settings'));
  const qLeft=d.querySelector('#q-left');
  qLeft.append(d.createTextNode('99'),d.createTextNode('% left'));
- w.__teacherxu_antigravity_zh__.refresh();
+ w.__antigravity_chinese_patch__.refresh();
 
  assert.equal(d.querySelector('#bp-main').textContent,'Default');
  assert.equal(d.querySelector('[data-testid="branch-pill-trigger"]').getAttribute('title'),'Default');
@@ -1319,7 +1320,7 @@ test('2.32.1 branch/worktree selector, model usage limits & pills, browser comme
  assert.equal(d.querySelector('#sp-unpin').textContent,'取消固定标签页');
  assert.equal(d.querySelector('#ab-banner').textContent,'当前对话正在另一个主窗口中操作内置浏览器');
 
- w.__teacherxu_antigravity_zh__.setEnabled(false);
+ w.__antigravity_chinese_patch__.setEnabled(false);
  assert.equal(d.querySelector('#wt-title').textContent,'Work in a New Worktree');
  assert.equal(d.querySelector('#wt-suf').textContent,'· new worktree');
  assert.equal(d.querySelector('#mdl-new-txt').textContent,'New');
@@ -1359,7 +1360,7 @@ test('2.32.1 Linux title menu bar and file manager reveal actions translate clea
   <button id="ob-trouble">Having trouble signing in?</button>
  </div>`);
  const w=dom.window,d=w.document;
- w.__teacherxu_antigravity_zh__.refresh();
+ w.__antigravity_chinese_patch__.refresh();
 
  assert.equal(d.querySelector('#tm-app').textContent,'Settings');
  assert.equal(d.querySelector('#tm-app').getAttribute('aria-label'),'Settings');
@@ -1385,7 +1386,7 @@ test('2.32.1 Linux title menu bar and file manager reveal actions translate clea
  assert.equal(d.querySelector('#ob-biz').textContent,'使用企业账号');
  assert.equal(d.querySelector('#ob-trouble').textContent,'登录遇到问题？');
 
- w.__teacherxu_antigravity_zh__.setEnabled(false);
+ w.__antigravity_chinese_patch__.setEnabled(false);
  assert.equal(d.querySelector('#tm-ws').textContent,'Workspace');
  assert.equal(d.querySelector('#tm-view').textContent,'View');
  assert.equal(d.querySelector('#tm-win').textContent,'Window');
@@ -1395,5 +1396,151 @@ test('2.32.1 Linux title menu bar and file manager reveal actions translate clea
  assert.equal(d.querySelector('#rev-linux').textContent,'Show in File Manager');
  assert.equal(d.querySelector('#ob-welcome').textContent,'Welcome to Antigravity!');
  assert.equal(d.querySelector('#ob-google').textContent,'Continue with Google');
+ dom.window.close();
+});
+
+
+test('v3.0 cleans up legacy runtime namespace and supports hot-reload fingerprint replacement', () => {
+ const dom = new JSDOM(html, { url: 'http://127.0.0.1:12345/', runScripts: 'outside-only', pretendToBeVisual: true });
+ const w = dom.window;
+ const d = w.document;
+ let legacyDisposed = 0;
+ w.__teacherxu_antigravity_zh__ = { dispose() { legacyDisposed++; } };
+ w.eval(source);
+ assert.equal(legacyDisposed, 1);
+ assert.equal(d.querySelector('h1').textContent, '设置');
+ const firstApi = w.__antigravity_chinese_patch__;
+
+ // Same fingerprint is idempotent
+ w.eval(source);
+ assert.equal(w.__antigravity_chinese_patch__, firstApi);
+ assert.equal(d.querySelectorAll('[data-agy-zh-control]').length, 1);
+
+ // Different requested fingerprint disposes previous instance cleanly and remounts
+ w.__AGY_ZH_REQUESTED_FINGERPRINT__ = '3.0.0-hotreload';
+ w.eval(source);
+ assert.notEqual(w.__antigravity_chinese_patch__, firstApi);
+ assert.equal(w.__antigravity_chinese_patch__.fingerprint, '3.0.0-hotreload');
+ assert.equal(d.querySelectorAll('[data-agy-zh-control]').length, 1);
+ assert.equal(d.querySelector('h1').textContent, '设置');
+
+ w.__antigravity_chinese_patch__.dispose();
+ dom.window.close();
+});
+
+test('v3.0 floating ball supports viewport-clamped drag persistence and cross-window storage sync', () => {
+ const dom = create();
+ const w = dom.window;
+ const d = w.document;
+ const ctrl = d.querySelector('[data-agy-zh-control]');
+ assert.ok(ctrl);
+ assert.equal(ctrl.textContent, '中文 · 开');
+
+ // Drag out of bounds and verify clamping + localStorage persistence
+ ctrl.dispatchEvent(new w.MouseEvent('mousedown', { bubbles: true, button: 0, clientX: 500, clientY: 500 }));
+ w.dispatchEvent(new w.MouseEvent('mousemove', { bubbles: true, clientX: -1000, clientY: 9999 }));
+ w.dispatchEvent(new w.MouseEvent('mouseup', { bubbles: true, clientX: -1000, clientY: 9999 }));
+
+ const savedPos = JSON.parse(w.localStorage.getItem('agyZhBallPos'));
+ assert.equal(savedPos.left, 8);
+ assert.ok(savedPos.top > 0 && savedPos.top <= w.innerHeight - 8);
+ assert.equal(ctrl.style.left, `${savedPos.left}px`);
+ assert.equal(ctrl.style.top, `${savedPos.top}px`);
+
+ // Cross-window storage sync toggles language
+ const ev = new w.StorageEvent('storage', {
+  key: 'agyZhLang',
+  newValue: 'en',
+  storageArea: w.localStorage,
+ });
+ w.dispatchEvent(ev);
+ assert.equal(w.__antigravity_chinese_patch__.isEnabled(), false);
+ assert.equal(d.querySelector('h1').textContent, 'Settings');
+ assert.equal(ctrl.textContent, '中文 · 关');
+
+ const evZh = new w.StorageEvent('storage', {
+  key: 'agyZhLang',
+  newValue: 'zh',
+  storageArea: w.localStorage,
+ });
+ w.dispatchEvent(evZh);
+ assert.equal(w.__antigravity_chinese_patch__.isEnabled(), true);
+ assert.equal(d.querySelector('h1').textContent, '设置');
+ dom.window.close();
+});
+
+test('v3.0 floating ball context menu toggles Keep English Option Labels preset cleanly', () => {
+ const body = `
+  <div data-testid="agent-input-box">
+   <button data-testid="model-selector-trigger"><span>Gemini 4 Carbon<span class="opacity-70"> Medium</span></span></button>
+   <button><span id="lbl-turbo">Turbo</span></button>
+  </div>
+  <div role="menu" data-testid="permissions-menu">
+   <span id="lbl-rr">Request Review</span>
+   <span id="desc-rr">Every command requires approval.</span>
+   <span id="lbl-auto">Auto</span>
+   <span id="lbl-tc">This Conversation</span>
+  </div>
+ `;
+ const dom = create(body);
+ const w = dom.window;
+ const d = w.document;
+ const ctrl = d.querySelector('[data-agy-zh-control]');
+ const menu = d.querySelector('[data-agy-zh-menu]');
+ assert.ok(menu);
+ assert.equal(menu.style.display, 'none');
+ assert.equal(d.querySelector('#lbl-rr').textContent, '请求审核');
+ assert.equal(d.querySelector('#lbl-turbo').textContent, '极速模式（Turbo）');
+ assert.equal(d.querySelector('#desc-rr').textContent, '每条命令都需要你的批准。');
+
+ // Open popup menu via right-click (contextmenu) and toggle checkbox
+ ctrl.dispatchEvent(new w.MouseEvent('contextmenu', { bubbles: true, cancelable: true }));
+ assert.equal(menu.style.display, 'block');
+ const checkbox = d.querySelector('[data-agy-zh-keep-en]');
+ checkbox.checked = true;
+ checkbox.dispatchEvent(new w.Event('change', { bubbles: true }));
+
+ assert.equal(w.__antigravity_chinese_patch__.getKeepEnglishLabels(), true);
+ assert.equal(w.localStorage.getItem('agyZhKeepEnglishLabels'), '1');
+ assert.equal(d.querySelector('#lbl-rr').textContent, 'Request Review');
+ assert.equal(d.querySelector('#lbl-turbo').textContent, 'Turbo');
+ assert.equal(d.querySelector('#lbl-auto').textContent, 'Auto');
+ assert.equal(d.querySelector('#lbl-tc').textContent, 'This Conversation');
+ assert.equal(d.querySelector('[data-testid="model-selector-trigger"]').textContent, 'Gemini 4 Carbon Medium');
+ // Descriptions must remain Chinese
+ assert.equal(d.querySelector('#desc-rr').textContent, '每条命令都需要你的批准。');
+ // Control menu itself is protected from translation
+ assert.equal(d.querySelector('[data-agy-zh-menu]').textContent.includes('选项名保留英文'), true);
+
+ // Disable Keep English Labels -> reverts back to Chinese
+ w.__antigravity_chinese_patch__.setKeepEnglishLabels(false);
+ assert.equal(d.querySelector('#lbl-rr').textContent, '请求审核');
+ assert.equal(d.querySelector('#lbl-turbo').textContent, '极速模式（Turbo）');
+ dom.window.close();
+});
+
+test('v3.0 supports custom user translation overrides and forced English retention', () => {
+ const body = `
+  <div role="menu">
+   <span id="custom-turbo">Turbo</span>
+   <span id="custom-rr">Request Review</span>
+   <span id="custom-normal">General</span>
+  </div>
+ `;
+ const dom = new JSDOM(body, { url: 'http://127.0.0.1:12345/', runScripts: 'outside-only', pretendToBeVisual: true });
+ dom.window.__agyZhCustomTranslations = [
+  ['turbo', '闪电档'],
+  ['Request Review', ''],
+ ];
+ dom.window.eval(source);
+ dom.window.document.dispatchEvent(new dom.window.Event('DOMContentLoaded'));
+ const d = dom.window.document;
+ assert.equal(d.querySelector('#custom-turbo').textContent, '闪电档');
+ assert.equal(d.querySelector('#custom-rr').textContent, 'Request Review');
+ assert.equal(d.querySelector('#custom-normal').textContent, '通用');
+
+ dom.window.__antigravity_chinese_patch__.setEnabled(false);
+ assert.equal(d.querySelector('#custom-turbo').textContent, 'Turbo');
+ dom.window.__antigravity_chinese_patch__.dispose();
  dom.window.close();
 });

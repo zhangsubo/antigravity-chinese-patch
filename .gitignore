@@ -8,3 +8,8 @@ __pycache__/
 *.log
 .env*
 coverage/
+/target/
+tools/drift-report.json
+!dist/
+!dist/*.js
+!dist/*.json

@@ -1,0 +1,284 @@
+[
+  {
+    "id": "available-ai-credits",
+    "regex": "^Available AI Credits:\\s*(.+)$",
+    "flags": "i",
+    "replacement": "可用 AI 点数：$1"
+  },
+  {
+    "id": "shared-with",
+    "regex": "^Shared with:\\s*(.+)$",
+    "flags": "i",
+    "replacement": "共享配额模型：$1"
+  },
+  {
+    "id": "show-more-count",
+    "regex": "^Show more \\((\\d+)\\)$",
+    "flags": "i",
+    "replacement": "显示更多 ($1)"
+  },
+  {
+    "id": "send-feedback-as",
+    "regex": "^Send feedback as (.+)$",
+    "flags": "i",
+    "replacement": "以 $1 的身份发送反馈"
+  },
+  {
+    "id": "show-breakdowns",
+    "regex": "^Show (\\d+) breakdowns?$",
+    "flags": "i",
+    "replacement": "展开 $1 项明细"
+  },
+  {
+    "id": "tools-count",
+    "regex": "^(\\d+) tools?$",
+    "flags": "i",
+    "replacement": "$1 个工具"
+  },
+  {
+    "id": "demoted-count",
+    "regex": "^(\\d+) demoted$",
+    "flags": "i",
+    "replacement": "$1 项已降级"
+  },
+  {
+    "id": "excluded-count",
+    "regex": "^(\\d+) excluded$",
+    "flags": "i",
+    "replacement": "$1 项已排除"
+  },
+  {
+    "id": "tools-excluded-count",
+    "regex": "^(\\d+) tools? excluded$",
+    "flags": "i",
+    "replacement": "已排除 $1 个工具"
+  },
+  {
+    "id": "archived-conversations-count",
+    "regex": "^(\\d+) archived conversations?$",
+    "flags": "i",
+    "replacement": "$1 个已归档对话"
+  },
+  {
+    "id": "models-selected-count",
+    "regex": "^(\\d+) models? selected$",
+    "flags": "i",
+    "replacement": "已选择 $1 个模型"
+  },
+  {
+    "id": "active-modes-count",
+    "regex": "^(\\d+) active modes?$",
+    "flags": "i",
+    "replacement": "已启用 $1 个模式"
+  },
+  {
+    "id": "files-changed-count",
+    "regex": "^(\\d+) files? changed$",
+    "flags": "i",
+    "replacement": "$1 个文件已修改"
+  },
+  {
+    "id": "see-all-count",
+    "regex": "^See all \\((\\d+)\\)$",
+    "flags": "i",
+    "replacement": "查看全部 ($1)"
+  },
+  {
+    "id": "low-contrast-ratio",
+    "regex": "^Low contrast ratio \\((.+)\\)\\. Text may be hard to read\\.$",
+    "flags": "i",
+    "replacement": "对比度过低（$1），文字可能难以辨认。"
+  },
+  {
+    "id": "rows-count",
+    "regex": "^(\\d+(?:\\s*/\\s*\\d+)?) rows?$",
+    "flags": "",
+    "replacement": "$1 行"
+  },
+  {
+    "id": "thought-for-seconds",
+    "regex": "^Thought for (\\d+)s$",
+    "flags": "",
+    "replacement": "已思考 $1 秒"
+  },
+  {
+    "id": "all-changes-since",
+    "regex": "^All changes since (.+)$",
+    "flags": "",
+    "replacement": "自 $1 以来的所有变更"
+  },
+  {
+    "id": "agent-needs-permission",
+    "regex": "^Agent needs permission to act on (.+)$",
+    "flags": "",
+    "replacement": "智能体需要权限以操作 $1"
+  },
+  {
+    "id": "skip-and-skip-all",
+    "regex": "^Skip \\((.+)\\), Skip All \\((.+)\\)$",
+    "flags": "",
+    "replacement": "跳过 ($1)，全部跳过 ($2)"
+  },
+  {
+    "id": "step-of-total",
+    "regex": "^Step (\\d+) of (\\d+)$",
+    "flags": "",
+    "replacement": "第 $1 步，共 $2 步"
+  },
+  {
+    "id": "task-not-found",
+    "regex": "^Task \"([\\s\\S]+)\" not found\\.$",
+    "flags": "",
+    "replacement": "未找到任务“$1”。"
+  },
+  {
+    "id": "use-voice-name",
+    "regex": "^Use (Fola|Arlo|Cleo|Finn|Gero|Lora|Neno|Olin|Tari)$",
+    "flags": "",
+    "replacement": "使用 $1"
+  },
+  {
+    "id": "your-plan",
+    "regex": "^Your Plan:\\s*(.+)$",
+    "flags": "",
+    "replacement": "当前套餐：$1"
+  },
+  {
+    "id": "shortcut-conflicts-with",
+    "regex": "^Conflicts with \"([\\s\\S]+)\" \\(press Enter to replace\\)$",
+    "flags": "",
+    "replacement": "与“$1”冲突（按 Enter 替换）"
+  },
+  {
+    "id": "shortcut-conflict-assigned",
+    "regex": "^Conflict: also assigned to (.+)$",
+    "flags": "",
+    "replacement": "冲突：同时分配给了 $1"
+  },
+  {
+    "id": "no-mcp-servers-found",
+    "regex": "^No MCP servers found for \"([\\s\\S]+)\"$",
+    "flags": "",
+    "replacement": "未找到与“$1”匹配的 MCP 服务器"
+  },
+  {
+    "id": "connecting-to-host",
+    "regex": "^Connecting to (.+)…$",
+    "flags": "",
+    "replacement": "正在连接到 $1…"
+  },
+  {
+    "id": "connected-to-host",
+    "regex": "^Connected to (.+)$",
+    "flags": "",
+    "replacement": "已连接到 $1"
+  },
+  {
+    "id": "ssh-config-name",
+    "regex": "^SSH Config \\((.+)\\)$",
+    "flags": "",
+    "replacement": "SSH 配置（$1）"
+  },
+  {
+    "id": "hidden-hosts-count",
+    "regex": "^(\\d+) hidden hosts?$",
+    "flags": "",
+    "replacement": "$1 台已隐藏主机"
+  },
+  {
+    "id": "remove-host-from-recent",
+    "regex": "^Remove (.+) from Recent$",
+    "flags": "",
+    "replacement": "从最近使用中移除 $1"
+  },
+  {
+    "id": "hide-host-from-list",
+    "regex": "^Hide (.+) from this list$",
+    "flags": "",
+    "replacement": "从此列表中隐藏 $1"
+  },
+  {
+    "id": "show-host-in-list",
+    "regex": "^Show (.+) in the list again$",
+    "flags": "",
+    "replacement": "重新在列表中显示 $1"
+  },
+  {
+    "id": "on-remote-host",
+    "regex": "^On (\\S+)$",
+    "flags": "",
+    "replacement": "位于 $1"
+  },
+  {
+    "id": "add-provider-resources",
+    "regex": "^Add (Google Drive|GitHub) resources$",
+    "flags": "",
+    "replacement": "添加 $1 资源"
+  },
+  {
+    "id": "connect-provider-browse",
+    "regex": "^Connect your account to browse (Google Drive|GitHub)\\.$",
+    "flags": "",
+    "replacement": "关联账号以浏览 $1。"
+  },
+  {
+    "id": "add-selected-count",
+    "regex": "^Add \\((\\d+)\\)$",
+    "flags": "",
+    "replacement": "添加 ($1)"
+  },
+  {
+    "id": "private-resources-single-owner",
+    "regex": "^A project's private resources must all belong to one owner \\((.+)\\)\\.$",
+    "flags": "",
+    "replacement": "项目的私有资源必须全部归属于同一所有者（$1）。"
+  },
+  {
+    "id": "accounts-count",
+    "regex": "^(\\d+) accounts?$",
+    "flags": "",
+    "replacement": "$1 个账号"
+  },
+  {
+    "id": "drafts-count",
+    "regex": "^(\\d+) Drafts?$",
+    "flags": "",
+    "replacement": "$1 条草稿"
+  },
+  {
+    "id": "resume-comment-drafts",
+    "regex": "^Resume (\\d+) comment drafts?$",
+    "flags": "",
+    "replacement": "继续编辑 $1 条评论草稿"
+  },
+  {
+    "id": "hidden-by-policy",
+    "regex": "^Hidden by policy \\((.+)\\)\\.$",
+    "flags": "",
+    "replacement": "已按策略隐藏（$1）。"
+  },
+  {
+    "id": "remote-upload-unsupported",
+    "regex": "^([A-Z0-9]{1,8}) file uploads are not currently supported in remote mode$",
+    "flags": "",
+    "replacement": "云端远程模式暂不支持上传 $1 文件"
+  },
+  {
+    "id": "percent-left",
+    "regex": "^(\\d+)% left$",
+    "flags": "i",
+    "replacement": "剩余 $1%"
+  },
+  {
+    "id": "downloads-percent-complete",
+    "regex": "^Downloads, (\\d+)% complete$",
+    "flags": "",
+    "replacement": "下载（已完成 $1%）"
+  },
+  {
+    "id": "version-number",
+    "regex": "^Version (\\d[\\w.+~-]*)$",
+    "flags": "",
+    "replacement": "版本 $1"
+  }
+]

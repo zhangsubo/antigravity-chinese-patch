@@ -6,13 +6,95 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Release tag (e.g. v2.32.1.2). Leave empty to use package.json version.'
+        description: 'Release tag (e.g. v3.0.0). Leave empty to use package.json version.'
         required: false
         type: string
 permissions:
   contents: write
 jobs:
-  release:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: npm ci --ignore-scripts
+      - run: npm run build:payloads
+      - run: git diff --exit-code -- dist/
+      - run: npm run test:js
+      - run: cargo test
+
+  build:
+    needs: verify
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            artifact: agy-zh-macos-arm64
+            bin: agy-zh
+            cross_linux_arm64: false
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            artifact: agy-zh-macos-x64
+            bin: agy-zh
+            cross_linux_arm64: false
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            artifact: agy-zh-linux-x64
+            bin: agy-zh
+            cross_linux_arm64: false
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            artifact: agy-zh-linux-arm64
+            bin: agy-zh
+            cross_linux_arm64: true
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact: agy-zh-windows-x64.exe
+            bin: agy-zh.exe
+            cross_linux_arm64: false
+          - os: windows-latest
+            target: aarch64-pc-windows-msvc
+            artifact: agy-zh-windows-arm64.exe
+            bin: agy-zh.exe
+            cross_linux_arm64: false
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+      - name: Install Linux ARM64 cross-linker
+        if: matrix.cross_linux_arm64
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu
+      - name: Build single-file binary
+        env:
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+        run: cargo build --release --target ${{ matrix.target }}
+      - name: Stage release artifact
+        shell: bash
+        run: |
+          mkdir -p release-assets
+          cp "target/${{ matrix.target }}/release/${{ matrix.bin }}" "release-assets/${{ matrix.artifact }}"
+          if [[ "${{ matrix.bin }}" != *.exe ]]; then
+            chmod +x "release-assets/${{ matrix.artifact }}"
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: binary-${{ matrix.artifact }}
+          path: release-assets/${{ matrix.artifact }}
+
+  publish:
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,18 +103,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
-      - uses: actions/setup-python@v5
+      - uses: actions/download-artifact@v4
         with:
-          python-version: '3.11'
-      - run: npm ci --ignore-scripts
-      - run: npm test
-      - run: npm run build
-      - run: git diff --exit-code -- dist/antigravity-zh-cn.js
+          path: downloaded-assets
       - name: Package and publish release
         env:
           GH_TOKEN: ${{ github.token }}
           INPUT_TAG: ${{ inputs.tag }}
+        shell: bash
         run: |
           if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
             TAG="${GITHUB_REF_NAME}"
@@ -41,67 +119,81 @@ jobs:
           else
             TAG="v$(node -p "require('./package.json').version")"
           fi
-          ZIP="antigravity-zh-cn-${TAG}.zip"
-          git archive --format=zip --prefix="antigravity-zh-cn-${TAG}/" HEAD -o "${ZIP}"
-          shasum -a 256 "${ZIP}" > SHA256SUMS.txt
-          python3 - "${TAG}" "${GITHUB_REPOSITORY}" <<'PY' > RELEASE_NOTES.md
-          import json, pathlib, re, sys
-          tag, repo = sys.argv[1], sys.argv[2]
-          ver = tag.lstrip('v')
-          compat = json.loads(pathlib.Path('tools/compatibility.json').read_text('utf-8'))
-          versions = ' / '.join(compat['versions'].keys())
-          entries = len(json.loads(pathlib.Path('locales/zh-CN.json').read_text('utf-8')))
-          changelog = pathlib.Path('CHANGELOG.md').read_text('utf-8')
-          m = re.search(rf'^## \[{re.escape(ver)}\][^\n]*\n(.*?)(?=^## \[|^\[|\Z)', changelog, re.M | re.S)
-          changes = m.group(1).strip() if m else f'- 适配 Antigravity Desktop {versions}，共收录 {entries} 条简体中文译文。'
-          print(f"""适用于 **Google Antigravity Desktop** 的简体中文本地化补丁，提供界面汉化、中英文实时切换及原版备份与还原。
 
-          ## 本次更新（{tag}）
+          mkdir -p release-assets
+          find downloaded-assets -type f -exec cp {} release-assets/ \;
+          SRC_ZIP="antigravity-chinese-patch-${TAG}-src.zip"
+          git archive --format=zip --prefix="antigravity-chinese-patch-${TAG}/" HEAD -o "release-assets/${SRC_ZIP}"
 
-          {changes}
+          (cd release-assets && sha256sum * > ../SHA256SUMS.txt)
+          mv SHA256SUMS.txt release-assets/SHA256SUMS.txt
 
-          ## 兼容性
+          node - "${TAG}" "${GITHUB_REPOSITORY}" <<'NODE' > RELEASE_NOTES.md
+          const fs = require('node:fs');
+          const [tag, repo] = process.argv.slice(2);
+          const ver = tag.replace(/^v/, '');
+          const compat = JSON.parse(fs.readFileSync('tools/compatibility.json', 'utf8'));
+          const bundle = JSON.parse(fs.readFileSync('dist/zh-CN.bundle.json', 'utf8'));
+          const swarm = JSON.parse(fs.readFileSync('locales/scoped/swarm.json', 'utf8'));
+          const versions = Object.keys(compat.verified_versions || {}).join(' / ');
+          const mainCount = Object.keys(bundle.exact || {}).length;
+          const patternCount = (bundle.patterns || []).length;
+          const swarmCount = Object.keys(swarm.exact || {}).length;
+          const changelog = fs.readFileSync('CHANGELOG.md', 'utf8');
+          const escaped = ver.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const match = changelog.match(new RegExp(`^## \\[${escaped}\\][^\\n]*\\n([\\s\\S]*?)(?=^## \\[|^\\[|$)`, 'm'));
+          const changes = match
+            ? match[1].trim()
+            : `- 适配 Antigravity Desktop ${versions}（支持新版弹性锚点与零改包 CDP 动态模式），主界面 ${mainCount} 条词条 + ${patternCount} 条正则 + Swarm ${swarmCount} 条词条。`;
 
-          | 项目 | 支持情况 |
-          | --- | --- |
-          | 应用版本 | Antigravity Desktop **{versions}** |
-          | 词库规模 | **{entries}** 条简体中文词条 |
-          | 操作系统 | macOS（Apple Silicon 已实测）、Linux（x86_64 已实测，支持 2.32.1）、Windows（x86_64 已支持 2.32.1） |
-          | 安装环境 | Python **3.9+** |
+          const notes = [
+            `适用于 **Google Antigravity Desktop** 的双模简体中文本地化工具，提供零外部依赖的 Rust 单文件可执行程序 \`agy-zh\`。`,
+            '',
+            `## 本次更新（${tag}）`,
+            '',
+            changes,
+            '',
+            '## 兼容性与规模',
+            '',
+            '| 项目 | 支持情况 |',
+            '| --- | --- |',
+            `| 已验证版本 | Antigravity Desktop **${versions}**（未收录新版本自动启用结构锚点与 CDP 动态守护） |`,
+            `| 词库规模 | 主界面 **${mainCount}** 条精确词条 + **${patternCount}** 条规则；Swarm 面板 **${swarmCount}** 条专用词条 |`,
+            '| 操作系统 | macOS（Apple Silicon / Intel）、Linux（x64 / arm64）、Windows（x64 / arm64） |',
+            '| 运行依赖 | **零依赖**单文件可执行程序（无需 Python 或 Node.js） |',
+            '',
+            '## 快速使用',
+            '',
+            `1. 在下方 **Assets** 下载对应平台的 \`agy-zh-*\` 单文件二进制（可通过 \`SHA256SUMS.txt\` 校验完整性）：`,
+            '   - macOS Apple Silicon: `agy-zh-macos-arm64`',
+            '   - macOS Intel: `agy-zh-macos-x64`',
+            '   - Linux x64 / ARM64: `agy-zh-linux-x64` / `agy-zh-linux-arm64`',
+            '   - Windows x64 / ARM64: `agy-zh-windows-x64.exe` / `agy-zh-windows-arm64.exe`',
+            '2. **模式一（推荐）：零改包 CDP 动态守护**（不改原包签名，自动升级不掉汉化）：',
+            '   ```bash',
+            '   ./agy-zh run       # 启动动态汉化',
+            '   ./agy-zh shortcut  # 一键生成「Antigravity 中文」桌面快捷方式 / macOS .app',
+            '   ./agy-zh stop      # 停止后台守护进程',
+            '   ```',
+            '3. **模式二：静态 ASAR 安全补丁**（涵盖原生托盘、退出确认弹窗与右键菜单）：',
+            '   ```bash',
+            '   ./agy-zh doctor',
+            '   # macOS（先 Cmd+Q 完全退出并阅读安全说明）：',
+            '   ./agy-zh install --acknowledge-signature-change --allow-local-library-loading',
+            '   # Linux / Windows（完全退出后）：',
+            '   ./agy-zh install',
+            '   # 一键无损还原（兼容 v2 存量备份）：',
+            '   ./agy-zh restore',
+            '   ```',
+            '',
+            `更多文档请查看 [仓库主页](https://github.com/${repo})。`,
+          ];
+          console.log(notes.join('\n'));
+          NODE
 
-          ## 下载与安装
-
-          1. 在下方 **Assets** 中下载 `antigravity-zh-cn-{tag}.zip` 并解压（可通过 `SHA256SUMS.txt` 校验完整性）。
-          2. 在终端进入解压目录，运行只读检查：
-             ```bash
-             # macOS / Linux
-             python3 tools/patcher.py doctor
-
-             # Windows
-             python tools/patcher.py doctor
-             ```
-          3. 完全退出 Antigravity：
-             - **macOS**：按 `⌘Q` 退出，确认接受[安全说明](https://github.com/{repo}/tree/{tag}#安全说明)后执行：
-               ```bash
-               python3 tools/patcher.py install --acknowledge-signature-change --allow-local-library-loading
-               ```
-             - **Linux**：确保进程完全退出后执行：
-               ```bash
-               python3 tools/patcher.py install
-               ```
-             - **Windows**：确保托盘及后台 `Antigravity.exe` / `language_server.exe` 进程完全退出后执行：
-               ```powershell
-               python tools/patcher.py install
-               ```
-          4. 如需恢复原版应用：
-             ```bash
-             python3 tools/patcher.py restore  # Windows 可使用 python tools/patcher.py restore
-             ```
-          """)
-          PY
           if gh release view "${TAG}" >/dev/null 2>&1; then
             gh release edit "${TAG}" --title "${TAG}" --notes-file RELEASE_NOTES.md
-            gh release upload "${TAG}" "${ZIP}" SHA256SUMS.txt --clobber
+            gh release upload "${TAG}" release-assets/* --clobber
           else
-            gh release create "${TAG}" "${ZIP}" SHA256SUMS.txt --target "${GITHUB_SHA}" --title "${TAG}" --notes-file RELEASE_NOTES.md
+            gh release create "${TAG}" release-assets/* --target "${GITHUB_SHA}" --title "${TAG}" --notes-file RELEASE_NOTES.md
           fi

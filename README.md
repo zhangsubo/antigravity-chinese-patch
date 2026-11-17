@@ -3,24 +3,44 @@
 [![Tests](https://github.com/zhangsubo/antigravity-chinese-patch/actions/workflows/test.yml/badge.svg)](https://github.com/zhangsubo/antigravity-chinese-patch/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-适用于 **Google Antigravity（反重力）Desktop** 的简体中文本地化补丁，提供全面界面汉化、中英文实时切换，以及原版应用的备份与还原。
+适用于 **Google Antigravity（反重力）Desktop** 的双模简体中文本地化工具，提供 **Rust 零外部依赖单文件可执行程序 `agy-zh`**，支持**零改包 CDP 动态守护**与**静态 ASAR 安全补丁**两种模式，以及跨窗口中英文实时切换、内置 Swarm 面板隔离汉化和原版无损还原。
 
-本项目由 **[张小璋 / zhangsubo](https://github.com/zhangsubo)** 开发维护，采用 MIT 许可证开源，为非 Google 官方的社区项目。当前适配 **macOS、Linux 与 Windows 上的 Antigravity Desktop**（macOS 支持 2.22.0 / 2.23.0 / 2.29.1 / 2.31.2 / 2.32.1，Linux 与 Windows 支持 **2.32.1**），已在 Apple Silicon Mac、Linux x86_64 与 Windows 11 x64 设备上完成验证。
+本项目由 **[张小璋 / zhangsubo](https://github.com/zhangsubo)** 开发维护，采用 MIT 许可证开源，为非 Google 官方的社区项目。当前已验证支持 **macOS、Linux 与 Windows 上的 Antigravity Desktop**（精确指纹支持 **2.22.0 / 2.23.0 / 2.29.1 / 2.31.2 / 2.32.1**，未收录新版本自动启用结构锚点弹性适配与零改包动态模式）。
 
-**[仓库主页](https://github.com/zhangsubo/antigravity-chinese-patch) · [安装指南](#install) · [更新日志](CHANGELOG.md) · [问题反馈](https://github.com/zhangsubo/antigravity-chinese-patch/issues)**
+**[仓库主页](https://github.com/zhangsubo/antigravity-chinese-patch) · [模式选择与安装](#install) · [自定义词表](#custom-dict) · [更新日志](CHANGELOG.md) · [问题反馈](https://github.com/zhangsubo/antigravity-chinese-patch/issues)**
 
-本仓库于 2026-11-17 从 [zhangsubo/antigravity-zh-cn](https://github.com/zhangsubo/antigravity-zh-cn) 的 `ead9330960b71e1d0d0be65e9996bae38c74ed2d`（版本 `2.32.1.3`）迁入，使用独立提交历史。旧仓库保留历史提交与发布记录。
+本仓库于 2026-11-17 从 [zhangsubo/antigravity-zh-cn](https://github.com/zhangsubo/antigravity-zh-cn) 的 `ead9330960b71e1d0d0be65e9996bae38c74ed2d`（版本 `2.32.1.3`）迁入，并在 `3.0.0` 重构为双模架构。
 
-## 功能特性
+---
 
-- **深度界面汉化**：内置 **1,873 条**简体中文词条，覆盖：
-  - **设置中心**：账户、通用（含语音模式）、应用、外观、浏览器、界面布局、快捷键、通知、模型与用量、定制化（含插件云端连接与多账号说明）、意见反馈、项目与运行环境（含环境初始化脚本验证）等全部设置页与悬停说明；
-  - **主界面与导航**：侧边栏（含协调器与扩展显示筛选）、Linux 顶部菜单栏（`title-menu-bar`：工作区 / 视图 / 窗口、检查更新、命令面板、最小化/最大化/关闭与动态版本号）、创建项目向导弹窗（本地/云端远程切换、文件夹与资源选择、项目命名与重复检测）、项目与分支/工作树选择器（含新建工作树、SSH 远程主机、连接弹窗、机器切换器与 GitHub 仓库入口）、模型选择器与配额浮层（含 `新`/`快速`/`提示` 胶囊及 `本周额度`/`5 小时额度`/`剩余 %`）、主面板「自动化（Automations）」及「自定义配置（Customizations）」插件市场与已安装视图；
-  - **对话流与右侧面板**：权限审批卡片（含下载审批详情、可编辑权限目标与 macOS 辅助功能/屏幕录制权限引导卡）、对话级权限预设选择器与沙盒提示、外部资源选择器（Google Drive / GitHub）、选中引用/评论/追问（`/btw`）浮条、追问（Side Question）面板控件、多智能体实时画面面板（Multi-Agent Live Pane）、计划审阅栏、思考折叠头，以及侧边面板标签栏、终端、代码变更（Diff）、内置浏览器（含地址栏评论草稿胶囊、评论草稿编辑框与下载进度）、文件树与 CSV 查看器外围工具栏（含「在文件管理器中显示 / 在访达中显示 / 在文件资源管理器中显示」）；
-  - **原生组件（macOS & Linux）**：会话右键菜单（含子菜单与 SSH 远程窗口复用）、原生退出确认弹窗与状态栏托盘菜单。
-- **中英文实时切换**：通过主界面右下角的悬浮开关随时启用或关闭汉化，关闭后立即恢复英文原文。
-- **严格边界保护**：仅作用于受控界面控件，不翻译聊天正文、代码与 Diff 内容、输入框、命令参数、项目/分支名称、插件/技能专名或账号信息。
-- **安装校验与无损还原**：安装前核对应用版本、目标文件 SHA-256 指纹与签名完整性；完整保留原版应用备份与状态记录，随时一键还原。
+## 核心特性
+
+- **双模汉化架构（按需切换，互不冲突）**：
+  - **模式一（推荐）：零改包 CDP 动态守护（`agy-zh run` / `agy-zh shortcut`）**——完全不修改 `Antigravity.app` 原包，保留 Google 官方签名与 Apple 公证，客户端自动更新不掉汉化；后台通过 `127.0.0.1` 回环端口动态注入主界面与 Swarm 子帧，支持一键生成桌面快捷方式或 macOS `Antigravity 中文.app`。
+  - **模式二：静态 ASAR 安全补丁（`agy-zh install` / `agy-zh restore`）**——内存级二进制 ASAR 分块哈希重写；macOS 使用 APFS 写时复制秒级备份；除主界面与 Swarm 面板外，进一步覆盖 Electron 原生托盘、退出确认框、更新弹窗与会话右键菜单；支持存量 v2（`schema: 1` / `TeacherXuAI`）备份与状态记录 **100% 无损兼容还原**。
+- **全面深度词库与 Swarm 面板隔离汉化**：
+  - 主界面内置 **1,873 条**精确词条 + **47 条**动态规则，覆盖设置中心、侧边栏、Linux 顶部菜单栏、项目/分支/工作树/模型选择器、自动化（Automations）、自定义配置（Customizations）、权限审批流、追问面板、多智能体实时面板及右侧工具栏。
+  - 内置 **Swarm 面板**（`plugin://swarm--swarm_board-<id>/`）专用作用域词库 **142 条** + **7 条**规则，通过 `postMessage` 与主窗口同步中英文切换，严格保护消息正文、成员名、`@all`、`/swarm` 命令与讲述者自定义文案。
+- **新一代悬浮控制球与自定义词表**：
+  - 可拖拽记忆位置的新版半透明悬浮球，自动贴边防越界，支持多窗口 `localStorage` 实时同步；
+  - 右键或双击悬浮球打开配置菜单，可随时一键开启**「选项名保留英文」**预设开关（保留 `This Conversation` / `Request Review` / `Default` / `Auto` / `Turbo` / `High` / `Medium` / `Low` 英文选项名，说明文案照常汉化）；
+  - 支持可选本地 `custom-translations.txt` 用户词表（支持自定义译文或置空强制保留英文）。
+- **严格防误译边界**：仅作用于受控界面控件，绝不翻译聊天正文、代码与 Diff 内容、输入框、命令参数、项目/分支/技能名称、账号信息或外部登录页。
+
+---
+
+## 双模对比
+
+| 能力维度 | 模式一：零改包动态模式 (`agy-zh run` / `shortcut`) | 模式二：静态 ASAR 安全补丁 (`agy-zh install`) |
+| --- | --- | --- |
+| 修改原版应用 / 变更签名 | **否**（保留 Google 官方签名与 Apple 公证） | **是**（macOS 需本地 ad-hoc 重签并放宽库校验） |
+| 官方自动更新后是否失效 | **不失效**（通过快捷方式或 `run` 启动即生效） | 更新会覆盖补丁（支持 `--replace-stale-backup` 升级） |
+| 主界面 DOM / 悬浮球 / 自定义词表 | 完整支持 | 完整支持 |
+| 内置 Swarm 面板汉化 | 完整支持（CDP target 注入） | 完整支持（主进程 `did-frame-finish-load` 钩子） |
+| 原生退出确认框 / 托盘 / 会话右键菜单 | 不覆盖（受限不改包） | **完整覆盖**（含 2.32.1 `menu.js` / `updater.js` 锚点） |
+| 启动方式 | `agy-zh run` 或双击 `Antigravity 中文.app` / 快捷方式 | 直接双击原版 `Antigravity` 图标 |
+
+---
 
 ## 汉化效果
 
@@ -45,169 +65,202 @@
 
 </details>
 
-截图采集于 2026-10-11，环境为 macOS 26.5.2 / Apple Silicon / Antigravity Desktop 2.22.0。完整窗口仅遮挡账号区域，未重绘或修改界面文字。v0.1.1 沿用 v0.1.0 的翻译范围与界面效果。
+截图采集于 2026-10-11，环境为 macOS 26.5.2 / Apple Silicon / Antigravity Desktop 2.22.0。完整窗口仅遮挡账号区域，未重绘或修改界面文字。
 
 [查看完整图集与采集说明](docs/SCREENSHOTS.md) · [查看测试记录](docs/VALIDATION.md)
+
+---
 
 ## 兼容性
 
 | 项目 | 支持情况 |
 | --- | --- |
-| 版本规则 | 四段式 `x.y.z.n`（如 `2.32.1.3`）：前三段与最新适配的 Antigravity 版本一致，第四段为针对该版本的提交序号 |
-| 应用 | Google Antigravity Desktop **2.22.0 / 2.23.0 / 2.29.1 / 2.31.2 / 2.32.1**（Linux 与 Windows 支持 **2.32.1**） |
-| 操作系统 | macOS、Linux、Windows |
-| 处理器 | Apple Silicon Mac、Linux x86_64、Windows x64 已验证；Intel Mac / Linux arm64 / Windows arm64 尚未实测 |
-| 安装环境 | Python **3.9+**，无需 Node.js 或 npm 依赖 |
-| Antigravity IDE / VS Code | 不支持 |
+| 工具版本 | 标准 SemVer **`3.0.0`**（单文件 Rust 宿主 `agy-zh`） |
+| 已验证版本 | Google Antigravity Desktop **2.22.0 / 2.23.0 / 2.29.1 / 2.31.2 / 2.32.1** |
+| 未收录新版本 | 自动启用**结构锚点弹性注入**（静态模式）与 **CDP 动态注入**（动态模式） |
+| 操作系统与架构 | macOS（Apple Silicon / Intel）、Linux（x64 / arm64）、Windows（x64 / arm64） |
+| 运行期依赖 | **零依赖**（单文件可执行程序 `agy-zh`，无需安装 Python 或 Node.js） |
+| Antigravity IDE / VS Code | **不支持**（自动检测并拒绝 IDE 包） |
 
-安装器同时核对版本号与入口文件指纹。应用版本不受支持时，安装将停止，请勿通过修改版本号或指纹强行安装。
+---
 
 ## 安全说明
 
-**安装会修改应用文件，将修改版的外层签名替换为本地 ad-hoc 签名，并放宽这一份应用的动态库签名校验。** 这会降低该应用对所加载动态库的身份校验；修改版不等同于 Google 签名或 Apple 公证的软件，系统策略或后续更新可能阻止其运行。
+1. **零改包动态模式（`agy-zh run` / `agy-zh shortcut`）**：
+   - 不修改任何原始应用文件，不更改签名与公证；
+   - 仅使用 `--remote-debugging-port=<port> --remote-debugging-address=127.0.0.1` 绑定本地回环接口，**绝不启用**高危 `--remote-allow-origins=*`；
+   - 仅注入受检的本地页面与 `plugin://swarm--swarm_board-*` 子帧，不触碰外部登录页面（如 `accounts.google.com`）与内置浏览器普通网页，不在日志中记录包含鉴权参数的 URL 查询串。
+2. **静态 ASAR 安全补丁（`agy-zh install`）**：
+   - **安装会修改应用包内的 `app.asar`，在 macOS 上将外层签名替换为本地 ad-hoc 签名并附加 `com.apple.security.cs.disable-library-validation` 权限**，以加载原有 Google 框架；命令中的 `--acknowledge-signature-change` 与 `--allow-local-library-loading` 用于显式确认上述两项安全变化；
+   - 安装器不关闭系统 Gatekeeper 或 Hardened Runtime，不移除隔离属性，不修改 Electron 安全开关；
+   - 原版应用与恢复记录保存在应用旁边：`<App>.zh-cn-original` 与 `<App>.zh-cn-state.json`，请勿删除或直接双击备份包。
+3. **老版本用户平滑迁移**：
+   - 若你此前已通过 v2 `tools/patcher.py` 安装过补丁，新版 `agy-zh` 可直接通过 `doctor` 识别旧版 `legacy-v2` 标记与 `schema: 1` 备份，并支持直接执行 `agy-zh restore` 一键无损还原为 Google 原版后再切换动态或新版静态模式。
 
-安装命令中的 `--acknowledge-signature-change` 和 `--allow-local-library-loading` 分别用于确认上述两项变化。安装前请阅读并确认接受这些变化。
+补丁不读取账号凭据、不上传对话、不收集遥测，翻译逻辑完全本地离线执行。
 
-原版应用和恢复记录保存在应用旁边：
-
-- `Antigravity.app.zh-cn-original`：完整原版备份。
-- `Antigravity.app.zh-cn-state.json`：安装及恢复记录。
-
-请保留这两个文件。若系统阻止修改版运行，应先还原原版。
-
-<details>
-<summary>签名与权限详情</summary>
-
-本地签名不包含 Apple Team ID，因此修改版需要 `com.apple.security.cs.disable-library-validation` 权限，以加载原有 Google 框架。安装器不关闭系统 Gatekeeper 或 Hardened Runtime，不删除隔离属性，不修改 Electron 安全开关，也不启用远程调试端口。
-
-安装前会检查原版 Google 签名、macOS 公证、ASAR 完整性及 preload 指纹；遇到已有备份或冲突状态时停止。完整还原会恢复备份中的原始文件和签名。
-
-</details>
-
-补丁不读取账号凭据、不上传对话、不收集遥测，翻译代码不发起网络请求。分发包仅包含本项目源码、词库、文档和截图，不包含 Google 应用或其解包源码。
+---
 
 <a id="install"></a>
 
-## 安装指南
+## 安装与使用指南
 
-### 1. 获取补丁
+### 1. 获取单文件程序 `agy-zh`
 
-请先从 [Google 官网](https://antigravity.google/download) 安装受支持版本的 Antigravity。
+- **方式 A（推荐）：下载预编译单文件二进制**
+  从 [GitHub Releases](https://github.com/zhangsubo/antigravity-chinese-patch/releases) 下载对应平台产物（可结合 `SHA256SUMS.txt` 校验完整性）：
+  - macOS Apple Silicon：`agy-zh-macos-arm64`
+  - macOS Intel：`agy-zh-macos-x64`
+  - Linux x64 / ARM64：`agy-zh-linux-x64` / `agy-zh-linux-arm64`
+  - Windows x64 / ARM64：`agy-zh-windows-x64.exe` / `agy-zh-windows-arm64.exe`
 
-通过 Git 克隆本仓库并在终端进入目录：
-
-```bash
-git clone https://github.com/zhangsubo/antigravity-chinese-patch.git
-cd antigravity-chinese-patch
-```
-
-也可通过仓库的 **Code → Download ZIP** 下载当前源码，解压后在终端进入该目录。历史发布包请参阅[旧仓库 Releases](https://github.com/zhangsubo/antigravity-zh-cn/releases)。
-
-### 2. 检查应用状态
-
-```bash
-# macOS（默认检查 /Applications/Antigravity.app）或 Linux（自动探测常见安装目录）
-python3 tools/patcher.py doctor
-
-# Linux 自定义解压目录示例
-python3 tools/patcher.py doctor --app /path/to/Antigravity-x64
-
-# Windows（自动探测 %LOCALAPPDATA%\Programs\Antigravity 等常见安装目录）
-python tools/patcher.py doctor
-
-# Windows 自定义安装目录示例
-python tools/patcher.py doctor --app "C:\path\to\Antigravity"
-```
-
-该命令为只读检查，将显示应用版本、平台类型、汉化状态、备份位置和文件校验值。请在检查通过后继续。
-
-### 3. 安装汉化补丁
-
-- **macOS**：在 Antigravity 中按 `⌘Q` 完全退出应用。确认接受[安全说明](#安全说明)中的签名与权限变化后执行：
-
+  macOS / Linux 下载后赋予执行权限（若 macOS 提示来自互联网未签名二进制，可先执行 `xattr -d com.apple.quarantine ./agy-zh`）：
   ```bash
-  python3 tools/patcher.py install --acknowledge-signature-change --allow-local-library-loading
+  chmod +x ./agy-zh-macos-arm64
+  mv ./agy-zh-macos-arm64 ./agy-zh
   ```
 
-- **Linux**：完全退出 Antigravity（确保 `antigravity` 与 `language_server` 进程均已退出）后执行：
-
+- **方式 B：从源码编译**
+  需 Node.js **20+** 与 Rust **1.80+**：
   ```bash
-  # 自动探测 /opt/Antigravity、/usr/share/antigravity、~/.local/share/antigravity、~/Antigravity-x64 等目录
-  python3 tools/patcher.py install
-
-  # 或通过 --app 指定应用根目录（包含 antigravity 可执行文件与 resources/app.asar 的目录）
-  python3 tools/patcher.py install --app /path/to/Antigravity-x64
+  git clone https://github.com/zhangsubo/antigravity-chinese-patch.git
+  cd antigravity-chinese-patch
+  npm ci --ignore-scripts
+  npm run build   # 先编译验证 JS 载荷，再构建 target/release/agy-zh
   ```
 
-- **Windows**：完全退出 Antigravity（确保托盘图标、`Antigravity.exe` 与 `language_server.exe` 进程均已退出）后，在 PowerShell 或命令提示符中执行：
+直接无参数运行 `./agy-zh` 也可进入**交互式中文菜单**，按数字提示完成全部操作。
 
-  ```powershell
-  # 自动探测 %LOCALAPPDATA%\Programs\Antigravity、%LOCALAPPDATA%\Antigravity、%ProgramFiles%\Antigravity 等目录
-  python tools/patcher.py install
+---
 
-  # 或通过 --app 指定应用根目录（包含 Antigravity.exe 与 resources\app.asar 的目录）
-  python tools/patcher.py install --app "C:\path\to\Antigravity"
-  ```
+### 2. 模式一：零改包动态守护（推荐）
 
-macOS 默认应用路径为 `/Applications/Antigravity.app`；Linux 会按顺序探测 `/opt/Antigravity`、`/opt/antigravity`、`/usr/share/antigravity`、`/usr/lib/antigravity`、`~/.local/share/antigravity`、`~/Antigravity-x64` 及 `PATH` 中的真实应用目录；Windows 会按顺序探测 `%LOCALAPPDATA%\Programs\Antigravity`、`%LOCALAPPDATA%\Antigravity`、`%ProgramFiles%\Antigravity`、`%ProgramFiles(x86)%\Antigravity` 及 `PATH` 中的真实应用目录。若 Antigravity 更新覆盖了之前安装过补丁的应用、导致旧版本备份仍在，`doctor` 会显示 `stale_backup_version`；此时可在安装命令后追加 `--replace-stale-backup`，由安装器在核验旧备份完整后自动替换为新版备份。路径必须指向真实应用目录，不支持符号链接、目录联接（Junction）或越界软链；若目标目录无写入权限（如 Windows 下安装于 `Program Files`），安装器会提示权限不足（Windows 请以管理员身份运行终端）。
-
-### 4. 验证安装结果
-
-重新打开 Antigravity（macOS 为 `/Applications/Antigravity.app`，Windows/Linux 从原快捷方式或应用目录启动），进入设置，确认通用、应用、外观等页面的目标文字显示为中文。请勿双击应用旁边的 `.zh-cn-original` 原版备份。
-
-## 使用说明
-
-1. 关闭设置面板，返回主界面。
-2. 点击右下角的 **「中文 · 开」** 关闭汉化，按钮变为 **「中文 · 关」**。
-3. 再次点击可重新开启汉化。应用重启后默认开启中文。
-
-模型名称、版本号、额度数值、颜色值及代码示例保留原样。
-
-## 还原指南
-
-完全退出 Antigravity 后，在补丁目录执行：
+请先完全退出正在运行的 Antigravity 客户端（macOS 按 `⌘Q`）：
 
 ```bash
-# macOS / Linux
-python3 tools/patcher.py restore
+# 1) 直接以动态模式启动 Antigravity 并在后台常驻守护（客户端退出后自动退出）
+./agy-zh run
 
-# Windows
-python tools/patcher.py restore
+# 2) 一键生成桌面/启动台快捷方式（以后直接双击「Antigravity 中文」即可，无需开终端）
+./agy-zh shortcut
+
+# 3) 仅停止后台守护进程（不关闭客户端）
+./agy-zh stop
+
+# 4) 如需移除快捷方式
+./agy-zh shortcut --remove
 ```
 
-工具将校验备份并恢复完整原版应用及其签名。自定义路径的应用需使用与安装时相同的 `--app` 参数。
+- 自定义安装目录可通过 `--app <应用路径>` 指定；
+- 若用户此前已经用静态补丁修改过应用，建议先运行 `./agy-zh restore` 恢复 Google 原版签名，再使用动态模式。
 
-如果应用在安装补丁后已更新，还原操作会停止，以避免旧版备份覆盖新版。此时应保留备份，从官网重新安装，或通过 Issue 提供具体错误信息。
+---
 
-## 已知限制
+### 3. 模式二：静态 ASAR 安全补丁
 
-- 顶部 macOS 原生菜单、部分长说明、下拉选项和工具提示尚未完整汉化。
-- 应用更新可能覆盖补丁；新版本需要重新适配和验证。
-- 账号登录、地区资格、模型可用性和额度由 Antigravity 本身决定，汉化补丁不改变这些条件。
-- Intel Mac、企业受管设备策略及自动更新后的长期行为尚未完成实机验证。完整范围见[测试记录](docs/VALIDATION.md)。
+#### 第一步：只读诊断（`doctor`）
 
-## 开发与测试
+```bash
+# macOS（默认检查 /Applications/Antigravity.app）或 Linux / Windows 自动探测
+./agy-zh doctor
 
-开发环境要求 Node.js **20+**、npm 和 Python **3.9+**。
+# 指定自定义路径
+./agy-zh doctor --app /path/to/Antigravity
+```
+
+#### 第二步：安装补丁（`install`）
+
+完全退出 Antigravity Desktop（macOS 按 `⌘Q`，Linux/Windows 确保主进程与 `language_server` 均已退出）：
+
+- **macOS**：确认接受[安全说明](#安全说明)后执行：
+  ```bash
+  ./agy-zh install --acknowledge-signature-change --allow-local-library-loading
+  ```
+- **Linux / Windows**：
+  ```bash
+  ./agy-zh install
+  ```
+- 若 Antigravity 自动更新覆盖了旧版已打补丁应用，`doctor` 会显示 `stale_backup_version`；此时在安装命令后追加 `--replace-stale-backup` 即可安全更新备份并重打补丁。
+
+#### 第三步：无损还原（`restore`）
+
+完全退出 Antigravity 后执行（同时兼容还原 v2 存量备份）：
+
+```bash
+./agy-zh restore
+```
+
+---
+
+### 4. 悬浮球交互与快捷键
+
+- **单击右下角悬浮球（`中` / `EN`）**：实时切换主界面、所有同源窗口及内置 Swarm 面板的中英文；
+- **拖拽悬浮球**：移动到屏幕任意角落并自动记住位置（窗口大小变化时自动吸附防越界）；
+- **右键或双击悬浮球**：打开配置菜单，可勾选 **「选项名保留英文」**（如保留 `Auto`、`Turbo`、`Default`、`Request Review`、`High`、`Medium`、`Low` 等模式名），并可查看当前运行模式（静态补丁 / CDP 动态）与版本号。
+
+---
+
+<a id="custom-dict"></a>
+
+## 自定义词表（`custom-translations.txt`）
+
+如希望覆写特定翻译或强制保留某些词条为英文，可在以下默认路径创建 `custom-translations.txt`（也可通过 `run` / `install` 的 `--custom-translations <PATH>` 参数指定）：
+
+- **macOS**：`~/Library/Application Support/antigravity-chinese-patch/custom-translations.txt`
+- **Linux**：`${XDG_CONFIG_HOME:-~/.config}/antigravity-chinese-patch/custom-translations.txt`
+- **Windows**：`%APPDATA%\antigravity-chinese-patch\custom-translations.txt`（需显式附加 `--trust-custom-translations` 才加载）
+
+文件格式（UTF-8，大小上限 512 KB，Unix 建议权限 `chmod 600`）：
+
+```ini
+# 覆写已有翻译
+Settings = 系统设置
+
+# 等号右侧留空：强制保留英文原文
+Auto =
+Request Review =
+```
+
+为防止注入风险，词表仅作为纯 JSON 数据传入翻译器，拒绝包含 `<` 或 `>` 的译文以及软链接、宽松权限文件。
+
+---
+
+## 仓库结构与开发测试
+
+开发环境要求 Node.js **20+**、npm 和 Rust **1.80+**。
 
 ```bash
 npm ci --ignore-scripts
-npm test
-npm run build
+npm run build:payloads   # 校验 6 道词库门禁并确定性生成 dist/
+npm test                 # 运行 build:payloads + 35 项 JS 测试 + Rust 单元测试
+cargo build --release    # 构建单文件 target/release/agy-zh
 ```
+
+### 检测官方新版本漂移
+
+```bash
+npm run scan:drift -- /Applications/Antigravity.app.zh-cn-original/Contents/Resources/app.asar --report tools/drift-report.json
+```
+
+### 目录说明
 
 | 路径 | 用途 |
 | --- | --- |
-| `locales/zh-CN.json` | 中英文词库 |
-| `src/runtime.js` | 界面定位、文本翻译与原文恢复 |
-| `tools/patcher.py` | 应用检查、安装与还原 |
-| `tools/compatibility.json` | 支持版本与入口文件指纹 |
-| `dist/antigravity-zh-cn.js` | 构建后的运行时代码 |
-| `tests/` | DOM、ASAR、安装及还原测试 |
+| `locales/src/` | 分层主界面词库（`core/`、`views/`）与声明式正则规则（`rules/patterns.json`） |
+| `locales/scoped/swarm.json` | 内置 Swarm 面板独立作用域词库与防误译白名单 |
+| `src/shared/` | 统一常量命名空间与四级优先级翻译引擎 |
+| `src/runtime/` | 主界面扫描器、边界守卫、原生右键菜单拦截与新一代悬浮球 |
+| `src/swarm/` | Swarm 子帧独立运行时与 Electron 主进程 `did-frame-finish-load` 钩子 |
+| `tools/build-payloads.mjs` | 6 道词库质量门禁编译器与确定性 JS 载荷打包器 |
+| `tools/drift-detector.mjs` | 官方前端 Bundle / ASAR 文本漂移扫描器 |
+| `tools/compatibility.json` | Schema v2 兼容清单（已验证版本指纹 + 结构锚点规则） |
+| `rust-src/` | Rust 单文件宿主引擎（ASAR、APFS 克隆、重签、CDP 守护、快捷方式、CLI） |
+| `dist/` | 由编译器生成的确定性内嵌 JS/JSON 载荷（供 `build.rs` 编译期静态内嵌） |
+| `tests/` | JS DOM 回归测试、Swarm 隔离测试、门禁与漂移测试（另有 Rust `#[cfg(test)]` 套件） |
 
-运行时在指定区域使用完整词条匹配；关闭汉化时，仅恢复仍保持本项目译文的文本。安装器在应用副本中追加翻译代码、更新校验和并完成签名校验，然后保存恢复记录、备份原版并替换应用。
+修改源码或词库后请运行 `npm test` 并提交 `dist/` 更新；具体规范见 [贡献指南](CONTRIBUTING.md)。
 
-修改源码后需重新构建，同步更新 `package.json`、`package-lock.json` 与 `src/runtime.js` 中的四段式版本号（`<Antigravity 版本>.<提交序号>`），并一并提交生成文件。适配新版本时，须重新验证界面、安装、重启、语言切换、还原及原版签名。具体要求见[贡献指南](CONTRIBUTING.md)。
+---
 
 ## 更新日志
 
@@ -217,11 +270,11 @@ npm run build
 
 请通过 [GitHub Issues](https://github.com/zhangsubo/antigravity-chinese-patch/issues) 提交安装问题、翻译修正或功能建议，并提供：
 
-- 操作系统版本（macOS / Linux / Windows）、处理器类型及 Antigravity 版本。
-- 补丁版本、操作步骤和完整错误信息。
+- 操作系统版本（macOS / Linux / Windows）、处理器架构及 Antigravity 版本；
+- `agy-zh --version` 输出、`agy-zh doctor` 脱敏结果、操作步骤及完整报错；
 - 已遮挡个人信息的相关截图。
 
-请勿提交账号凭据、邮箱、登录二维码、私人对话、完整应用文件或个人目录。相同问题优先补充到已有 Issue，便于集中排查。
+请勿提交账号凭据、邮箱、登录二维码、私人对话、完整应用文件或个人目录。
 
 ## 许可证
 
@@ -229,5 +282,6 @@ npm run build
 
 ## 致谢
 
-- 本项目基于原仓库 [TeacherXuAI/antigravity-zh-cn](https://github.com/TeacherXuAI/antigravity-zh-cn) 演进开发，感谢原作者提供的早期架构与基础词库支持。
+- 本项目最初基于原仓库 [TeacherXuAI/antigravity-zh-cn](https://github.com/TeacherXuAI/antigravity-zh-cn) 演进开发，感谢原作者提供的早期架构与基础词库支持。
+- `3.0.0` 双模架构重构吸收了社区优秀工程实践（分层词库与 Swarm 作用域隔离、零改包 CDP 动态守护与单文件宿主分发）。
 - 感谢 [Linux.do](https://linux.do) 里的各位大佬的帖子，让我搞定 Antigravity 的登录和使用。
