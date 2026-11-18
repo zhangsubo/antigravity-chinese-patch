@@ -966,7 +966,7 @@ test('2.32.1 SSH remote, macOS permissions card, resource picker, setup script, 
  openStrong.textContent='Open ↗';
  cpHint.append(d.createTextNode('Click '),openStrong,d.createTextNode(' to open macOS Privacy & Security.'));
  w.__antigravity_chinese_patch__.refresh();
- assert.equal(w.__antigravity_chinese_patch__.version, '3.0.0');
+ assert.equal(w.__antigravity_chinese_patch__.version, '3.0.1');
  assert.equal(d.querySelector('[data-testid="plugins-section-header"] h2').textContent,'扩展');
  assert.equal(d.querySelector('[data-testid="plugins-visibility-trigger"]').getAttribute('aria-label'),'显示或隐藏扩展');
  assert.equal(d.querySelector('#ext-item').textContent,'Settings');
@@ -1399,6 +1399,24 @@ test('2.32.1 Linux title menu bar and file manager reveal actions translate clea
  dom.window.close();
 });
 
+
+test('2.32.2 onboarding survey preserves the display name and restores the original choices', () => {
+ const dom=create(`<div data-testid="onboarding-brand-shell">
+  <p class="entrance-step">Hey Design $&amp; Co!</p>
+  <p>Let's tailor the experience for you. What best describes your work?</p>
+  <button role="radio"><span>Design</span></button></div>
+  <pre>Hey Design!</pre><main id="chat">Science</main>`);
+ const d=dom.window.document, shell=d.querySelector('[data-testid="onboarding-brand-shell"]');
+ assert.equal(shell.querySelector('p').textContent,'你好，Design $& Co！');
+ assert.match(shell.textContent,/哪一项最符合你的工作/);
+ assert.equal(shell.querySelector('button').textContent,'设计');
+ assert.equal(d.querySelector('pre').textContent,'Hey Design!');
+ assert.equal(d.querySelector('#chat').textContent,'Science');
+ dom.window.__antigravity_chinese_patch__.setEnabled(false);
+ assert.equal(shell.querySelector('p').textContent,'Hey Design $& Co!');
+ assert.equal(shell.querySelector('button').textContent,'Design');
+ dom.window.close();
+});
 
 test('v3.0 cleans up legacy runtime namespace and supports hot-reload fingerprint replacement', () => {
  const dom = new JSDOM(html, { url: 'http://127.0.0.1:12345/', runScripts: 'outside-only', pretendToBeVisual: true });

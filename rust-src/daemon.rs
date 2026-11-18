@@ -16,6 +16,16 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 static SIGNAL_STOP: AtomicBool = AtomicBool::new(false);
 
+pub const CDP_RECOVERY_HINT: &str =
+    "若客户端正在启动，请稍后重试。若更新后持续断开，请完全退出 Antigravity Desktop，再执行 agy-zh stop 和 agy-zh run。";
+
+fn disconnect_expired(start: Instant, last_connected: Option<Instant>, now: Instant) -> bool {
+    match last_connected {
+        Some(last) => now.duration_since(last) >= Duration::from_secs(30),
+        None => now.duration_since(start) >= Duration::from_secs(90),
+    }
+}
+
 #[cfg(unix)]
 extern "C" fn handle_stop_signal(_sig: libc::c_int) {
     SIGNAL_STOP.store(true, Ordering::SeqCst);
@@ -304,7 +314,7 @@ pub fn run_cdp(opts: RunOptions) -> Result<RunReport, String> {
                 });
             }
         }
-        return Err("CDP daemon is already running; run `agy-zh stop` first".to_string());
+        return Err(format!("CDP 守护进程正在运行，调试端口暂不可用。{CDP_RECOVERY_HINT}"));
     }
 
     let attach_existing = match opts.port {
@@ -458,7 +468,7 @@ fn run_foreground_loop(
         .map_err(|e| format!("Failed to write daemon state: {e}"))?;
 
     let start = Instant::now();
-    let mut seen_cdp = false;
+    let mut last_connected = None;
     let mut miss_count = 0u32;
 
     loop {
@@ -468,12 +478,15 @@ fn run_foreground_loop(
 
         match poll_and_inject(port, custom_dict) {
             Ok(_cycle) => {
-                seen_cdp = true;
+                last_connected = Some(Instant::now());
                 miss_count = 0;
             }
             Err(_) => {
                 miss_count = miss_count.saturating_add(1);
-                let past_startup = seen_cdp || start.elapsed() > Duration::from_secs(12);
+                if disconnect_expired(start, last_connected, Instant::now()) {
+                    break;
+                }
+                let past_startup = last_connected.is_some() || start.elapsed() > Duration::from_secs(12);
                 if past_startup
                     && miss_count >= 3
                     && !is_app_running(app, platform, &RealSystemOps).unwrap_or(false)
@@ -556,6 +569,16 @@ pub fn stop_daemon() -> Result<StopReport, String> {
 mod tests {
     use super::*;
     use crate::platform::canonical_temp_dir;
+
+    #[test]
+    fn disconnect_grace_restarts_after_a_successful_poll() {
+        let start = Instant::now();
+        let after = |s| start + Duration::from_secs(s);
+        assert!(!disconnect_expired(start, None, after(89)));
+        assert!(disconnect_expired(start, None, after(90)));
+        assert!(!disconnect_expired(start, Some(after(88)), after(117)));
+        assert!(disconnect_expired(start, Some(after(88)), after(118)));
+    }
 
     #[test]
     fn single_instance_lock_prevents_double_acquire_and_reports_running_state() {

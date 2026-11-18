@@ -21,6 +21,8 @@ pub struct CompatibilityManifest {
 pub struct VerifiedVersionRule {
     #[serde(default)]
     pub platforms: Option<Vec<String>>,
+    #[serde(default)]
+    pub fallback_on_other_platforms: bool,
     pub preload_sha256: String,
     pub entry: String,
     #[serde(default)]
@@ -85,6 +87,28 @@ pub struct PatchPlan {
 }
 
 impl CompatibilityManifest {
+    pub fn verified_rule(
+        &self,
+        platform: Platform,
+        version: &str,
+    ) -> Result<Option<&VerifiedVersionRule>, String> {
+        let Some(rule) = self.verified_versions.get(version) else {
+            return Ok(None);
+        };
+        if let Some(platforms) = &rule.platforms {
+            if !platforms.iter().any(|name| name == platform.as_str()) {
+                if rule.fallback_on_other_platforms {
+                    return Ok(None);
+                }
+                return Err(format!(
+                    "Unsupported version on {}: {}; no files changed",
+                    platform.display_label(), version
+                ));
+            }
+        }
+        Ok(Some(rule))
+    }
+
     pub fn load_embedded() -> Result<Self, String> {
         Self::from_json_str(COMPATIBILITY_JSON)
     }
@@ -157,17 +181,7 @@ pub fn resolve_version_plan(
     archive: &AsarArchive,
     already_patched: bool,
 ) -> Result<PatchPlan, String> {
-    if let Some(rule) = manifest.verified_versions.get(version) {
-        if let Some(allowed) = &rule.platforms {
-            if !allowed.iter().any(|p| p == platform.as_str()) {
-                return Err(format!(
-                    "Unsupported version on {}: {}; no files changed",
-                    platform.display_label(),
-                    version
-                ));
-            }
-        }
-
+    if let Some(rule) = manifest.verified_rule(platform, version)? {
         let mut file_replacements: BTreeMap<String, Vec<[String; 2]>> = BTreeMap::new();
         let mut applied_anchors = Vec::new();
         let mut skipped_anchors = Vec::new();
@@ -334,7 +348,7 @@ mod tests {
     fn embedded_manifest_loads_all_verified_versions() {
         let m = CompatibilityManifest::load_embedded().unwrap();
         assert_eq!(m.schema, 2);
-        for ver in ["2.22.0", "2.23.0", "2.29.1", "2.31.2", "2.32.1"] {
+        for ver in ["2.22.0", "2.23.0", "2.29.1", "2.31.2", "2.32.1", "2.32.2"] {
             assert!(m.verified_versions.contains_key(ver), "missing {ver}");
         }
         assert_eq!(m.anchor_rules.entry, "dist/preload.js");
@@ -380,6 +394,12 @@ mod tests {
         ]);
         let archive = AsarArchive::parse(&raw).unwrap();
         let plan = resolve_version_plan(&m, Platform::Darwin, "2.99.0", &archive, false).unwrap();
+        let win_plan = resolve_version_plan(&m, Platform::Win32, "2.32.2", &archive, false).unwrap();
+        assert_eq!(win_plan.mode, CompatibilityMode::AnchorFallback);
+        for platform in [Platform::Darwin, Platform::Linux] {
+            let err = resolve_version_plan(&m, platform, "2.32.2", &archive, false).unwrap_err();
+            assert!(err.contains("Unknown preload fingerprint"));
+        }
         assert_eq!(plan.mode, CompatibilityMode::AnchorFallback);
         assert!(plan.main_swarm_hook);
         assert!(plan.file_replacements.contains_key("dist/preload.js"));

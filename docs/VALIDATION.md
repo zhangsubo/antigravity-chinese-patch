@@ -1,5 +1,24 @@
 # 验证记录
 
+## 2026-11-18 · Linux x64 Desktop 2.32.2 / agy-zh 3.0.1
+
+- 在 Instabox 的 Debian 13 x86_64、XFCE 桌面上，以普通用户在独立目录构建并运行当前工作区版本。官方 Linux x64 归档 SHA-256 为 `233d90cc8db48f4a09f8a0575b6bc0dfc0bb46f155217d89e1b0e5fd1d780235`。[Google 官方归档 2.32.2-4665802025205760](https://storage.googleapis.com/antigravity-public/antigravity-hub/2.32.2-4665802025205760/linux-x64/Antigravity.tar.gz)
+- `doctor` 识别为 `verified`，5 个脚本共 23 条规则命中。原版 ASAR 与同版本 macOS 的 SHA-256 一致，为 `056ba838faf9b75c1382a6a0ae003c4b051a3c3e50060a9e5b34987313492d77`。
+- `agy-zh run` 在原版窗口加载动态汉化，诊断确认 CDP 可达。点击悬浮开关，登录页的 “Welcome to Antigravity!” 和 “Continue with Google” 在原文与「欢迎使用 Antigravity！」「通过 Google 继续」之间双向切换。
+- 模拟更新后客户端不带 CDP 端口重启，确认客户端运行期间 `doctor` 同时报告守护进程存活、端口不可达并给出恢复提示。持续断连后守护进程释放锁，客户端仍在运行。正常退出客户端，再执行 `agy-zh run`，登录页恢复中文。
+- 静态模式执行 `install → 启动 → 退出 → 重启 → 退出 → restore`。两次启动均通过同一登录页切换验证，运行期间的还原请求均被拒绝。最终 ASAR 与主程序 SHA-256 均恢复为安装前的值，备份与状态文件均已清理。
+- 在固定 Linux 测试机 `box-856891` 的已登录安装上原位更新汉化守护进程，并沿用登录资料。后续 Linux 验收复用该安装与资料，保留 Desktop 应用，仅在需要时升级。
+- 首次登录问卷的问候语、职业提问及全部选项完成汉化。通过页面的「跳过」进入工作区。实机核对「新建对话」「设置」「自动化」「项目」以及 Linux 菜单「工作区」「视图」「窗口」的双向切换。进入设置后核对「设置」「通用」「外观」「应用」「浏览器」「快捷键」「通知」。
+- 内置 Swarm 面板的后台 iframe 已加载 3.0.1。切换主窗口语言时，子帧中的「概览」「看板」「成员」「关系图」「原始数据」同步切换。此次验证针对后台标签文本，未操作协作任务。
+- Linux 上的 36 项 JavaScript、23 项 Rust 回归测试全部通过。验收结束时，设置弹窗已关闭，Desktop 保持登录并显示中文工作区。
+
+## 2026-11-18 · macOS Desktop 2.32.2 / agy-zh 3.0.1
+
+- 在本机官方应用副本执行 `doctor → install → doctor → restore`。确认 `verified` 模式、5 个脚本中全部 23 条替换及 JavaScript 语法。安装与还原均通过 `codesign --verify --deep --strict`。还原后 ASAR 与原件逐字节一致，SHA-256 为 `056ba838faf9b75c1382a6a0ae003c4b051a3c3e50060a9e5b34987313492d77`。
+- 对更新后正在运行的客户端执行 `doctor`，复核守护进程仍存活、记录的 CDP 端口拒绝连接的情况。使用新版守护进程重启原版 Desktop 后，端口恢复可达，原版签名校验通过。
+- 在静态副本和动态模式的原版窗口内点击悬浮开关，核对「新建对话」「自动化」「项目」「设置」与英文原文之间的双向切换。静态副本的原生菜单显示「新建窗口」，重启后再次通过切换验证。最终原版客户端处于动态中文模式。
+- 35 项 JavaScript 与 24 项 Rust 回归测试全部通过。Windows 2.32.2 继续使用结构锚点，待实机验收。
+
 ## 2026-11-16：Windows 版 Antigravity Desktop 2.32.1 适配与本机验证
 
 - 核查官方 Windows x64 安装目录 `C:\Users\zhang\AppData\Local\Programs\Antigravity`（版本 `2.32.1`）：

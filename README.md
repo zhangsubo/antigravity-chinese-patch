@@ -5,7 +5,7 @@
 
 适用于 **Google Antigravity（反重力）Desktop** 的双模简体中文本地化工具，提供 **Rust 零外部依赖单文件可执行程序 `agy-zh`**（macOS arm64 Release 实测约 **1.6 MB**，无需 Python 或 Node.js 运行环境），支持**零改包 CDP 动态守护**与**静态 ASAR 安全补丁**两种模式，以及跨窗口中英文实时切换、内置 Swarm 面板隔离汉化和原版无损还原。
 
-本项目由 **[张小璋 / zhangsubo](https://github.com/zhangsubo)** 开发维护，采用 MIT 许可证开源，为非 Google 官方的社区项目。当前已验证支持 **macOS、Linux 与 Windows 上的 Antigravity Desktop**（精确指纹支持 **2.22.0 / 2.23.0 / 2.29.1 / 2.31.2 / 2.32.1**，未收录新版本自动启用结构锚点弹性适配与零改包动态模式）。
+本项目由 **[张小璋 / zhangsubo](https://github.com/zhangsubo)** 开发维护，采用 MIT 许可证开源，为非 Google 官方的社区项目。当前已验证支持 **macOS、Linux 与 Windows 上的 Antigravity Desktop**（精确指纹支持 **2.22.0 / 2.23.0 / 2.29.1 / 2.31.2 / 2.32.1 / 2.32.2**，其中 2.32.2 已在 macOS 和 Linux x64 上实测，Windows 使用结构锚点。未收录新版本自动启用结构锚点弹性适配与零改包动态模式）。
 
 **[仓库主页](https://github.com/zhangsubo/antigravity-chinese-patch) · [架构与双模对比](#architecture) · [安装与使用指南](#install) · [命令速查](#cli) · [自定义词表](#custom-dict) · [更新日志](CHANGELOG.md) · [问题反馈](https://github.com/zhangsubo/antigravity-chinese-patch/issues)**
 
@@ -16,9 +16,9 @@
 ## 功能特性
 
 - **双模汉化架构（按需切换，互不冲突）**：
-  - **模式一（推荐）：零改包 CDP 动态守护（`agy-zh run` / `agy-zh shortcut`）**——完全不修改 `Antigravity.app` 原包，保留 Google 官方签名与 Apple 公证，官方自动更新不掉汉化；在 Linux `/opt` 或 Windows `Program Files` 等系统目录安装原版时也**无需 `sudo` 或管理员权限**即可运行；支持一键生成 macOS `Antigravity 中文.app`、Windows 桌面 `.lnk` 或 Linux `.desktop` 快捷方式。
+  - **模式一（推荐）：零改包 CDP 动态守护（`agy-zh run` / `agy-zh shortcut`）**——完全不修改 `Antigravity.app` 原包，保留 Google 官方签名与 Apple 公证，客户端更新后可用中文快捷方式或 `agy-zh run` 重新启动汉化；在 Linux `/opt` 或 Windows `Program Files` 等系统目录安装原版时也**无需 `sudo` 或管理员权限**即可运行；支持一键生成 macOS `Antigravity 中文.app`、Windows 桌面 `.lnk` 或 Linux `.desktop` 快捷方式。
   - **模式二：静态 ASAR 安全补丁（`agy-zh install` / `agy-zh restore`）**——内存级二进制 ASAR 分块 SHA-256 重写；macOS 升级为 APFS 写时复制秒级备份（失败回退 `ditto`）；除主界面与 Swarm 面板外，进一步覆盖 Electron 原生托盘、退出确认框、更新提示与会话右键菜单；支持存量 v2（`schema: 1` / `TeacherXuAI`）备份与状态记录 **100% 无损兼容还原**。
-- **五大覆盖域深度汉化（主界面 1,873 条精确词条 + 47 条动态规则；Swarm 面板 142 条专用词条 + 7 条规则）**：
+- **五大覆盖域深度汉化（主界面 1,878 条精确词条 + 47 条动态规则；Swarm 面板 142 条专用词条 + 7 条规则）**：
   - **设置中心**：账户、通用（含语音模式）、应用、外观、浏览器、界面布局、快捷键、通知、模型与用量、定制化（含插件云端连接与多账号说明）、意见反馈、项目与运行环境（含环境初始化脚本验证）等全部设置页与悬停说明；
   - **主界面与导航**：侧边栏（含协调器与扩展显示筛选）、Linux 顶部自定义菜单栏（`title-menu-bar`：工作区 / 视图 / 窗口、检查更新、命令面板、最小化/最大化/关闭与动态版本号）、首次启动登录引导页、创建项目向导弹窗（本地/云端远程切换、文件夹与资源选择、项目命名与重复检测）、项目与分支/工作树选择器（含新建工作树、SSH 远程主机、连接弹窗、机器切换器与 GitHub 仓库入口）、模型选择器与配额浮层（含 `新`/`快速`/`提示` 胶囊及 `本周额度`/`5 小时额度`/`剩余 %`）、主面板「自动化（Automations）」及「自定义配置（Customizations）」插件市场与已安装视图；
   - **对话流与右侧面板**：权限审批卡片（含下载审批详情、可编辑权限目标与 macOS 辅助功能/屏幕录制权限引导卡）、对话级权限预设选择器与沙盒提示、外部资源选择器（Google Drive / GitHub）、选中引用/评论/追问（`/btw`）浮条、追问（Side Question）面板控件、多智能体实时画面面板（Multi-Agent Live Pane）、计划审阅栏、思考折叠头，以及侧边面板标签栏、终端、代码变更（Diff）、内置浏览器（含地址栏评论草稿胶囊、评论草稿编辑框与下载进度）、文件树与 CSV 查看器外围工具栏（含「在文件管理器中显示 / 在访达中显示 / 在文件资源管理器中显示」）；
@@ -76,7 +76,7 @@ flowchart TB
 | --- | --- | --- |
 | 修改原版应用 / 变更签名 | **否**（保留 Google 官方签名与 Apple 公证） | **是**（macOS 需本地 ad-hoc 重签并放宽库校验） |
 | 管理员 / `sudo` 权限需求 | **通常无需**（不改动 `/Applications`、`/opt` 或 `Program Files`） | 修改系统安装目录时需对应写入权限（`sudo` / 管理员终端） |
-| 官方自动更新后是否失效 | **不失效**（通过快捷方式或 `run` 启动即生效） | 更新会覆盖补丁（支持 `--replace-stale-backup` 升级） |
+| 官方自动更新后是否失效 | 完全退出更新后的客户端，通过中文快捷方式或 `run` 重新启动 | 更新会覆盖补丁（支持 `--replace-stale-backup` 升级） |
 | 主界面 DOM / 悬浮球 / 自定义词表 | 完整支持 | 完整支持 |
 | 内置 Swarm 面板汉化 | 完整支持（CDP target 注入） | 完整支持（主进程 `did-frame-finish-load` 钩子） |
 | 原生退出确认框 / 托盘 / 右键菜单 | 不覆盖（受限不改包） | **完整覆盖**（含 2.32.1 `menu.js` / `updater.js` 锚点） |
@@ -117,8 +117,8 @@ flowchart TB
 
 | 项目 | 支持情况 |
 | --- | --- |
-| 工具版本 | 标准三段式 SemVer **`3.0.0`**（单文件 Rust 宿主 `agy-zh`） |
-| 已精确验证版本 | Google Antigravity Desktop **2.22.0 / 2.23.0 / 2.29.1 / 2.31.2 / 2.32.1**（Linux 与 Windows 实测支持 **2.32.1**） |
+| 工具版本 | 标准三段式 SemVer **`3.0.1`**（单文件 Rust 宿主 `agy-zh`） |
+| 已精确验证版本 | Google Antigravity Desktop **2.22.0 / 2.23.0 / 2.29.1 / 2.31.2 / 2.32.1 / 2.32.2**（Linux x64 实测 **2.32.1 / 2.32.2**，Windows x64 实测 **2.32.1**） |
 | 未收录新版本 | 自动启用**结构锚点弹性注入**（静态模式）与 **CDP 动态守护**（动态模式） |
 | 操作系统与架构 | Apple Silicon Mac、Linux x86_64、Windows 11 x64 已实测；Intel Mac / Linux arm64 / Windows arm64 提供官方构建产物，欢迎实机反馈 |
 | 运行期依赖 | **零依赖**（单文件可执行程序 `agy-zh`，无需安装 Python 或 Node.js） |
@@ -299,9 +299,11 @@ flowchart TB
 | `agy-zh run` | 零改包 CDP 动态模式启动或附着汉化 | `--app <PATH>`、`--port <PORT>`、`--custom-translations <PATH>`、`--trust-custom-translations` |
 | `agy-zh shortcut` | 生成或移除动态模式桌面/启动台快捷方式 | `--app <PATH>`、`--output <DIR>`、`--remove` |
 | `agy-zh stop` | 停止后台 CDP 守护进程（不关闭客户端） | 无 |
-| `agy-zh doctor` | 只读诊断版本、补丁状态、锚点与备份完整性 | `--app <PATH>` |
+| `agy-zh doctor` | 只读诊断版本、补丁状态、锚点、备份和 CDP 端口连通性 | `--app <PATH>` |
 | `agy-zh install` | 安装静态 ASAR 安全补丁 | `--app <PATH>`、`--acknowledge-signature-change`、`--allow-local-library-loading`、`--replace-stale-backup`、`--custom-translations <PATH>`、`--trust-custom-translations` |
 | `agy-zh restore` | 从备份无损还原原版应用与签名（兼容 v2） | `--app <PATH>` |
+
+如果更新后界面变回英文，执行 `agy-zh doctor`。当守护进程仍在运行而 `cdp_endpoint_reachable` 为 `false` 时，先等客户端启动完成。若持续断开，保存工作并完全退出 Desktop，再依次运行 `agy-zh stop` 和 `agy-zh run`。3.0.1 守护进程会在已建立的 CDP 连接连续中断 30 秒后自行退出。
 
 ---
 

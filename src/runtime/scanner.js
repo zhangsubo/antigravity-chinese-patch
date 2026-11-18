@@ -653,6 +653,12 @@ export function createScanner(translator, options = {}) {
   }
 
   function scanMultiAgentAndMenuBar() {
+    for (const greeting of document.querySelectorAll('[data-testid="onboarding-brand-shell"] p.entrance-step')) {
+      const node = greeting.firstChild;
+      if (node?.nodeType !== 3 || node.nextSibling || protectedNode(node)) continue;
+      const raw = english(node);
+      if (/^Hey .+!$/u.test(raw)) setRecordedText(node, raw.replace(/^Hey (.+)!$/u, '你好，$1！'));
+    }
     for (const rootEl of document.querySelectorAll(
       '[data-testid="computer-permissions-card"],[data-agy-agents-pane],' +
       '[data-testid="webview-url-bar-draft-capsule"],[data-testid="comment-box"],' +

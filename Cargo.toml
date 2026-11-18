@@ -1,6 +1,6 @@
 [package]
 name = "antigravity-chinese-patch"
-version = "3.0.0"
+version = "3.0.1"
 edition = "2021"
 license = "MIT"
 description = "Dual-mode Simplified Chinese localization tool for Google Antigravity Desktop"

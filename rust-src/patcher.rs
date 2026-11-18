@@ -3,7 +3,8 @@ use crate::compatibility::{
     resolve_version_plan, validate_desktop_identity, CompatibilityManifest, PatchPlan,
 };
 use crate::custom_dict::LoadedCustomDict;
-use crate::daemon::daemon_status_summary;
+use crate::cdp::fetch_targets;
+use crate::daemon::{daemon_status_summary, CDP_RECOVERY_HINT};
 use crate::platform::{
     app_platform, asar_path, assert_app_path, assert_no_escaping_symlinks, ensure_stopped,
     ensure_writable, is_link, leave_app_dir_if_inside, lexically_abs, paths, run_checked,
@@ -79,6 +80,10 @@ pub struct DoctorReport {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub stale_backup_version: Option<String>,
     pub cdp_daemon_running: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cdp_endpoint_reachable: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cdp_recovery_hint: Option<&'static str>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cdp_port: Option<u16>,
 }
@@ -223,8 +228,7 @@ pub fn inspect_app_with_manifest(
     };
 
     let entry_path = manifest
-        .verified_versions
-        .get(&version)
+        .verified_rule(platform, &version)?
         .map(|r| r.entry.as_str())
         .unwrap_or(manifest.anchor_rules.entry.as_str());
     let preload_bytes = archive.read(entry_path)?;
@@ -284,6 +288,11 @@ pub fn build_doctor_report(info: &AppInspection) -> DoctorReport {
     };
 
     let daemon_summary = daemon_status_summary();
+    let cdp_endpoint_reachable = daemon_summary.port
+        .filter(|_| daemon_summary.app.as_deref().is_some_and(|path| {
+            same_app_path(path, &info.app, info.platform)
+        }))
+        .map(|port| fetch_targets(port).is_ok());
 
     DoctorReport {
         tool_version: TOOL_VERSION.to_string(),
@@ -311,6 +320,8 @@ pub fn build_doctor_report(info: &AppInspection) -> DoctorReport {
         stale_backup_version,
         cdp_daemon_running: daemon_summary.running,
         cdp_port: daemon_summary.port,
+        cdp_endpoint_reachable,
+        cdp_recovery_hint: (cdp_endpoint_reachable == Some(false)).then_some(CDP_RECOVERY_HINT),
     }
 }
 
@@ -1011,7 +1022,7 @@ mod tests {
         let preload_hash = sha256_hex(fake_preload_bytes());
         let main_hash = sha256_hex(fake_main_bytes());
         let tray_hash = sha256_hex(fake_tray_bytes());
-        for ver in ["2.22.0", "2.23.0", "2.29.1", "2.31.2", "2.32.1"] {
+        for ver in ["2.22.0", "2.23.0", "2.29.1", "2.31.2", "2.32.1", "2.32.2"] {
             if let Some(rule) = m.verified_versions.get_mut(ver) {
                 rule.preload_sha256 = preload_hash.clone();
                 if let Some(tp) = rule.text_patches.get_mut("dist/preload.js") {
@@ -1087,7 +1098,7 @@ mod tests {
         let ops = MockInstallerOps::default();
         let dict = LoadedCustomDict::empty();
 
-        for ver in ["2.22.0", "2.23.0", "2.29.1", "2.31.2", "2.32.1"] {
+        for ver in ["2.22.0", "2.23.0", "2.29.1", "2.31.2", "2.32.1", "2.32.2"] {
             let (_tmp, root) = canonical_temp_dir();
             let (app, orig_asar) = create_darwin_app(&root, ver);
 
@@ -1109,7 +1120,7 @@ mod tests {
 
             let patched_info = inspect_app_with_manifest(&app, &m).unwrap();
             assert_eq!(patched_info.archive.read("asset").unwrap(), b"unchanged");
-            if ver == "2.29.1" || ver == "2.31.2" || ver == "2.32.1" {
+            if m.verified_versions[ver].main_swarm_hook {
                 let main_text = String::from_utf8(patched_info.archive.read("dist/main.js").unwrap()).unwrap();
                 assert!(main_text.contains("确认退出"));
                 assert!(main_text.contains(SWARM_HOOK_MARKER));
