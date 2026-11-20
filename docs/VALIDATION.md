@@ -1,5 +1,23 @@
 # 验证记录
 
+## 2026-11-19 ~ 2026-11-20 · Desktop 2.33.0 / agy-zh 3.0.2（macOS arm64 与 Linux x64 桌面实测通过；Windows 包指纹核验完成、实机待验收）
+
+- **三平台官方发行包 `2.33.0-4731201358004224` 核验**：
+  - Linux x64（`Antigravity.tar.gz`，SHA-256 `a73387b229c6b1f5288860731133c5b26e153340eaed96d865032cd8a8535050`）、macOS arm64（`Antigravity.zip`，SHA-256 `6af60b91feeb35ca1792d511525863cd4ab25d8fa0dd0e231f52250a3b177dc1`，`Info.plist` `ElectronAsarIntegrity` 为 `5cc93944e2465b18f89809b070aba600e302e71625065ad24798eea92d34a35e`）与 Windows x64（`Antigravity-x64.exe`，SHA-256 `44aea1c00f3b347fd60ab7291d267dbb04a5080f6c3212a8a31cf1426ddf86cb`，内嵌 `Antigravity.exe` Fuse `EnableEmbeddedAsarIntegrityValidation = 0`）三者解包后的 `resources/app.asar` 逐字节一致，SHA-256 均为 `b33c81600e82e65593aa8430ef01b37d6b28d9d98f0faf45e25957783b71e64b`。
+  - `dist/preload.js`（`2f1e963bbcbcb47426597c89667f85c415f1a09e8fc8b0e903a4e1f8baeb41dc`）、`dist/main.js`（`fa6815255b385e59d67f91be9e695a54083613fb3821e0c207651f31b3511457`）、`dist/tray.js`（`6c6b0968b45a1c7088e459657d57a9efd72d3733614349095f17b6ee94b47135`）、`dist/menu.js`（`34ce3fabe919e74eae9034fa1ee32c3202f3c40b2f5ffa642bee23a0958a5820`）与 `dist/updater.js`（`ef38da806d1db759ff94ec8b1181f057440150cedbab7992b633df8933951e04`）共 23 条替换规则在 `2.33.0` 中全部精确唯一命中。
+  - 基于 2.33.0 前端 `main.js` 的漂移扫描（`tools/drift-detector.mjs`）报告 `falsePositiveCount: 0`。
+- **macOS arm64 实机桌面验证（macOS 27.2.1 Build 26B131，Apple Silicon）**：
+  - 使用官方 `Antigravity.zip`（SHA-256 `6af60b91feeb35ca1792d511525863cd4ab25d8fa0dd0e231f52250a3b177dc1`）在隔离路径完成完整静态与动态双模验收：
+  - **静态补丁模式**：`agy-zh doctor` 识别 `version: "2.33.0"`、`compatibility_mode: "verified"`、5 脚本 23 条锚点规则；缺少 `--acknowledge-signature-change` 或 `--allow-local-library-loading` 的 `install` 均被安全拦截（退出码 `1`）；正式 `install` 成功（退出码 `0`，补丁后 `asar_sha256` 为 `530abfb24715c84f0fc8407a79a19a94f1df4da52de549426503e19552725a44`、`Info.plist` 新 `ElectronAsarIntegrity` 为 `e62e23f1850c3919e749be0c66acf79bcdf52dfc57e0e36cfde25d9b25d0ce88`，`codesign --verify --deep --strict` 通过）；实机启动 Electron 44.9.1 窗口，结合 CDP DOM 读取与 `screencapture` 核验登录引导页简体中文默认生效、中英文双向实时切换及重启恢复中文；运行期 `restore` 被拦截（退出码 `1`）；正式 `restore`（退出码 `0`）后 `app.asar` SHA-256 精确恢复为 `b33c81600e82e65593aa8430ef01b37d6b28d9d98f0faf45e25957783b71e64b`、`ElectronAsarIntegrity` 恢复为 `5cc93944e2465b18f89809b070aba600e302e71625065ad24798eea92d34a35e`、`codesign --verify --deep --strict` 与 `spctl --assess --type execute` 均通过（`accepted / Notarized Developer ID`）。
+  - **动态 CDP 守护模式**：在未打补丁原版上执行 `agy-zh run --port 19223`，`doctor` 跨命令复核 `cdp_daemon_running: true`、`cdp_endpoint_reachable: true`、`patched: false`，实机核验动态注入简体中文与双向切换，`agy-zh stop`（`stopped: true`）后 `app.asar` 哈希保持原版逐字节一致。
+  - **工程加固**：实测中发现 `is_app_running` 对进程命令行全串执行 `contains` 匹配会在宿主 CLI 参数（如长 prompt 或脚本子串）包含应用路径时触发误判，现已在 `rust-src/platform.rs` 收紧为三平台可执行文件路径前缀匹配并补充单元测试。
+- **Linux x64 实机桌面验证（Instabox `box-856891`，Debian GNU/Linux 13 x86_64，XFCE `DISPLAY=:1`）**：
+  - 在测试机同步源码构建并运行 `npm test`（38 项 JS DOM/构建/Swarm 测试 + 23 项 Rust 单元测试全部通过，退出码 `0`）。
+  - **静态补丁模式（`/opt/Antigravity`）**：不传 `--app` 执行 `agy-zh doctor` 自动识别 `/opt/Antigravity`（`version: "2.33.0"`、`compatibility_mode: "verified"`、`native_ui_tested: true`）；非 root 用户 `agy-zh install` 被权限校验拦截（退出码 `1`）；`sudo agy-zh install` 成功安装（退出码 `0`，补丁后 `asar_sha256` 为 `530abfb24715c84f0fc8407a79a19a94f1df4da52de549426503e19552725a44`）；在 `DISPLAY=:1` 实机启动并渲染 X11 窗口，核验登录页中英文双向切换、运行期 `sudo agy-zh restore` 被拦截（退出码 `1`）、退出重启后保持中文默认开启，以及最终 `sudo agy-zh restore`（退出码 `0`）后 `app.asar` SHA-256 精确恢复为 `b33c81600e82e65593aa8430ef01b37d6b28d9d98f0faf45e25957783b71e64b` 且备份与状态文件完全清理。
+  - **动态守护模式（`/data/workspace/agy-login-2.32.2.g1d3Bn/Antigravity-x64`）**：沿用已有登录资料执行 `agy-zh run`，`doctor` 确认 `cdp_daemon_running: true`、`cdp_endpoint_reachable: true`；实机核验并截取 2.33.0 新增启动条款确认弹窗（「开始使用前的最后一步…」）、主工作区多模板问候语（「欢迎回来，张璋，我们从哪里继续？」）、侧边栏/菜单栏（「工作区」「视图」「窗口」「新建对话」「自动化」「自定义配置」「项目」「设置」）、设置中心「浏览器」「快捷键」及内置 Swarm 面板的中英文双向切换。
+- **Windows 平台状态（未实机桌面测试）**：
+  - `tools/compatibility.json` 对 `2.33.0` 设置 `native_ui_tested_platforms: ["darwin", "linux"]`（`native_ui_tested` 默认为 `false`）；因此在 macOS 与 Linux 上 `doctor` 均报告 `native_ui_tested: true`，而在 Windows 上保持 `native_ui_tested: false`，待 Windows 桌面实机验收。
+
 ## 2026-11-18 · Linux x64 Desktop 2.32.2 / agy-zh 3.0.1
 
 - 在 Instabox 的 Debian 13 x86_64、XFCE 桌面上，以普通用户在独立目录构建并运行当前工作区版本。官方 Linux x64 归档 SHA-256 为 `233d90cc8db48f4a09f8a0575b6bc0dfc0bb46f155217d89e1b0e5fd1d780235`。[Google 官方归档 2.32.2-4665802025205760](https://storage.googleapis.com/antigravity-public/antigravity-hub/2.32.2-4665802025205760/linux-x64/Antigravity.tar.gz)

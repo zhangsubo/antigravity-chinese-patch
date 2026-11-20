@@ -280,5 +280,47 @@
     "regex": "^Version (\\d[\\w.+~-]*)$",
     "flags": "",
     "replacement": "版本 $1"
+  },
+  {
+    "id": "cookies-count",
+    "regex": "^(\\d+) cookies?$",
+    "flags": "",
+    "replacement": "$1 个 Cookie"
+  },
+  {
+    "id": "delete-cookies-for-site",
+    "regex": "^Delete cookies for (.+)$",
+    "flags": "",
+    "replacement": "删除 $1 的 Cookie"
+  },
+  {
+    "id": "open-scheme-link",
+    "regex": "^Open ([a-z][a-z0-9+.-]*) link\\?$",
+    "flags": "",
+    "replacement": "打开 $1 链接？"
+  },
+  {
+    "id": "ssh-signing-in-on-host",
+    "regex": "^You're signing in on (.+)\\. Your sign-in stays on that machine\\.$",
+    "flags": "",
+    "replacement": "你正在登录 $1。登录状态仅保存在该机器上。"
+  },
+  {
+    "id": "home-greeting-hey",
+    "regex": "^Hey (.+), what should we build today\\?$",
+    "flags": "",
+    "replacement": "你好，$1，今天我们要构建什么？"
+  },
+  {
+    "id": "home-greeting-welcome-back",
+    "regex": "^Welcome back, (.+)\\. Where should we pick up\\?$",
+    "flags": "",
+    "replacement": "欢迎回来，$1，我们从哪里继续？"
+  },
+  {
+    "id": "home-greeting-good-to-see-you",
+    "regex": "^Good to see you, (.+)\\. What's next\\?$",
+    "flags": "",
+    "replacement": "很高兴见到你，$1，接下来做什么？"
   }
 ]

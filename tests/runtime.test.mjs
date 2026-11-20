@@ -966,7 +966,7 @@ test('2.32.1 SSH remote, macOS permissions card, resource picker, setup script, 
  openStrong.textContent='Open ↗';
  cpHint.append(d.createTextNode('Click '),openStrong,d.createTextNode(' to open macOS Privacy & Security.'));
  w.__antigravity_chinese_patch__.refresh();
- assert.equal(w.__antigravity_chinese_patch__.version, '3.0.1');
+ assert.equal(w.__antigravity_chinese_patch__.version, JSON.parse(fs.readFileSync('package.json', 'utf8')).version);
  assert.equal(d.querySelector('[data-testid="plugins-section-header"] h2').textContent,'扩展');
  assert.equal(d.querySelector('[data-testid="plugins-visibility-trigger"]').getAttribute('aria-label'),'显示或隐藏扩展');
  assert.equal(d.querySelector('#ext-item').textContent,'Settings');
@@ -1560,5 +1560,202 @@ test('v3.0 supports custom user translation overrides and forced English retenti
  dom.window.__antigravity_chinese_patch__.setEnabled(false);
  assert.equal(d.querySelector('#custom-turbo').textContent, 'Turbo');
  dom.window.__antigravity_chinese_patch__.dispose();
+ dom.window.close();
+});
+
+test('v3.0.2 translates 2.33.0 browsing data, site cookies, external link modal, worktree selector, bundles, shortcuts, and side-question insert while protecting user data', () => {
+ const body = `
+  <section aria-label="Settings">
+   <h1>Settings</h1>
+   <nav><button>General</button><button>Application</button><button>Appearance</button></nav>
+   <article>
+    <h2>Browser</h2>
+    <div data-testid="browsing-data-row">
+     <span id="bd-title">Browsing Data</span>
+     <button data-testid="browser-site-data-manage-button">Manage</button>
+     <button data-testid="browser-clear-data-button">Clear</button>
+    </div>
+    <h2>Shortcuts</h2>
+    <div id="kb-scheme">
+     <span>Keybinding Scheme</span>
+     <span>VS Code Default</span>
+     <span id="kb-desc">Manage your keybinding scheme and customize shortcuts in VS Code.</span>
+    </div>
+    <div id="kb-filter">
+     <span>Inspect live bindings or record custom key chords filtered to</span>
+     <code>antigravity.</code>
+     <span>commands.</span>
+    </div>
+   </article>
+  </section>
+  <div role="dialog">
+   <h2>Cookies by Site</h2>
+   <div data-testid="browser-site-data-dialog">
+    <input placeholder="Search sites..." aria-label="Search sites">
+    <ul data-testid="browser-site-data-list" aria-label="Sites with cookies">
+     <li data-testid="browser-site-data-site" data-site="example.com">
+      <div><span id="site-host">example.com</span><span id="site-cookies">2 cookies</span></div>
+      <button data-testid="browser-site-data-delete" aria-label="Delete cookies for example.com"></button>
+     </li>
+    </ul>
+   </div>
+  </div>
+  <div role="dialog">
+   <h2>Clear Browsing Data?</h2>
+   <p id="cbd-desc">Choose what to clear from the built-in browser. It can't be undone.</p>
+   <button data-testid="browser-clear-data-cancel">Cancel</button>
+   <button data-testid="browser-clear-data-confirm">Clear</button>
+  </div>
+  <div role="dialog">
+   <h2>Open vscode link?</h2>
+   <div data-testid="external-link-confirm-modal">
+    <p id="ext-desc">This link wants to open an app on your device.</p>
+    <div data-testid="external-link-confirm-uri" aria-label="vscode://Settings" title="vscode://Settings">
+     <span data-testid="external-link-confirm-uri-head">vscode://</span>
+     <span data-testid="external-link-confirm-uri-tail">Settings</span>
+    </div>
+    <div data-testid="external-link-confirm-always">
+     <span>Always open</span>
+     <code>vscode:</code>
+     <span>links without asking</span>
+    </div>
+    <button data-testid="external-link-confirm-copy">Copy link</button>
+    <button data-testid="external-link-confirm-cancel">Cancel</button>
+    <button data-testid="external-link-confirm-open">Open link</button>
+   </div>
+  </div>
+  <div role="dialog">
+   <h2>Review bundle before adding</h2>
+   <div data-testid="plugin-source-caution-modal">
+    <span id="caution-plugin-name" class="font-medium truncate">Settings</span>
+    <span id="caution-badge">Experimental</span>
+    <a data-testid="review-plugin-source-caution">Review contents</a>
+    <button data-testid="cancel-plugin-source-caution">Cancel</button>
+    <button data-testid="confirm-plugin-source-caution">Add anyway</button>
+   </div>
+  </div>
+  <div data-testid="bundles-page">
+   <h1 id="bp-title">Bundles</h1>
+   <p id="bp-sub">Curated sets of plugins for common workflows and roles.</p>
+   <button id="bp-add">Add bundle</button>
+  </div>
+  <div data-testid="bundle-detail">
+   <h1 id="bd-name">Settings</h1>
+   <h2 id="bd-sec">What's in this bundle</h2>
+   <span id="bd-sep">Installed separately</span>
+   <button id="bd-rm">Remove bundle</button>
+  </div>
+  <button data-testid="jj-worktree-selector-trigger" aria-label="Select Worktree">
+   <span data-testid="jj-worktree-selector-label" id="wt-local">Local</span>
+  </button>
+  <button data-testid="jj-worktree-selector-trigger" aria-label="Select Worktree">
+   <span data-testid="jj-worktree-selector-label" id="wt-custom">Settings</span>
+  </button>
+  <div data-testid="jj-previous-worktrees-menu">
+   <div data-testid="jj-previous-worktree-option"><span>Settings</span></div>
+  </div>
+  <span data-testid="ssh-sign-in-subtitle" id="ssh-sub">You're signing in on dev-box. Your sign-in stays on that machine.</span>
+  <button data-testid="side-question-insert-to-main" id="sq-ins" aria-label="Insert into main conversation"></button>
+  <button data-testid="toolbar-text-selection-button" id="tb-sel" aria-label="Enable Text Selection"></button>
+  <div data-testid="browser-loopback-loading-state" id="lp-load">Loading preview…</div>
+  <div data-testid="jetbox-access-blocked-screen" id="ab-scr"><div>Access restricted</div><button>Try again</button></div>
+  <ol><li data-testid="step-plan-item" id="sp-item">Settings</li></ol>
+ `;
+ const dom = create(body);
+ const w = dom.window;
+ const d = w.document;
+ assert.equal(d.querySelector('#bd-title').textContent, '浏览数据');
+ assert.equal(d.querySelector('#kb-scheme span:first-child').textContent, '快捷键方案');
+ assert.equal(d.querySelector('#kb-scheme span:nth-child(2)').textContent, 'VS Code 默认');
+ assert.equal(d.querySelector('#kb-desc').textContent, '管理快捷键方案并在 VS Code 中自定义快捷键。');
+ assert.equal(d.querySelector('[data-testid="browser-site-data-dialog"] input').getAttribute('placeholder'), '搜索站点...');
+ assert.equal(d.querySelector('#site-host').textContent, 'example.com');
+ assert.equal(d.querySelector('#site-cookies').textContent, '2 个 Cookie');
+ assert.equal(d.querySelector('[data-testid="browser-site-data-delete"]').getAttribute('aria-label'), '删除 example.com 的 Cookie');
+ assert.equal(d.querySelector('#cbd-desc').textContent, '选择要从内置浏览器中清除的内容。此操作无法撤销。');
+ assert.equal(d.querySelector('[data-testid="external-link-confirm-modal"]').parentElement.querySelector('h2').textContent, '打开 vscode 链接？');
+ assert.equal(d.querySelector('#ext-desc').textContent, '此链接希望打开你设备上的应用程序。');
+ assert.equal(d.querySelector('[data-testid="external-link-confirm-uri"]').getAttribute('aria-label'), 'vscode://Settings');
+ assert.equal(d.querySelector('[data-testid="external-link-confirm-uri-tail"]').textContent, 'Settings');
+ assert.equal(d.querySelector('[data-testid="external-link-confirm-always"] span:first-child').textContent, '始终打开');
+ assert.equal(d.querySelector('[data-testid="external-link-confirm-always"] span:last-child').textContent, '链接且不再询问');
+ assert.equal(d.querySelector('[data-testid="external-link-confirm-open"]').textContent, '打开链接');
+ assert.equal(d.querySelector('#caution-plugin-name').textContent, 'Settings');
+ assert.equal(d.querySelector('#caution-badge').textContent, '实验性');
+ assert.equal(d.querySelector('[data-testid="confirm-plugin-source-caution"]').textContent, '仍然添加');
+ assert.equal(d.querySelector('#bp-title').textContent, '插件套装');
+ assert.equal(d.querySelector('#bp-add').textContent, '添加套装');
+ assert.equal(d.querySelector('#bd-name').textContent, 'Settings');
+ assert.equal(d.querySelector('#bd-sec').textContent, '套装包含内容');
+ assert.equal(d.querySelector('#bd-sep').textContent, '已单独安装');
+ assert.equal(d.querySelector('#bd-rm').textContent, '移除套装');
+ assert.equal(d.querySelector('#wt-local').textContent, '本地');
+ assert.equal(d.querySelector('#wt-custom').textContent, 'Settings');
+ assert.equal(d.querySelector('[data-testid="jj-previous-worktree-option"]').textContent, 'Settings');
+ assert.equal(d.querySelector('#ssh-sub').textContent, '你正在登录 dev-box。登录状态仅保存在该机器上。');
+ assert.equal(d.querySelector('#sq-ins').getAttribute('aria-label'), '插入主对话');
+ assert.equal(d.querySelector('#tb-sel').getAttribute('aria-label'), '启用文本选择');
+ assert.equal(d.querySelector('#lp-load').textContent, '正在加载预览…');
+ assert.equal(d.querySelector('#ab-scr div').textContent, '访问受限');
+  assert.equal(d.querySelector('#sp-item').textContent, 'Settings');
+
+ w.__antigravity_chinese_patch__.setEnabled(false);
+ assert.equal(d.querySelector('#bd-title').textContent, 'Browsing Data');
+ assert.equal(d.querySelector('#site-cookies').textContent, '2 cookies');
+ assert.equal(d.querySelector('#wt-local').textContent, 'Local');
+ assert.equal(d.querySelector('#ssh-sub').textContent, "You're signing in on dev-box. Your sign-in stays on that machine.");
+ assert.equal(d.querySelector('#sq-ins').getAttribute('aria-label'), 'Insert into main conversation');
+ w.__antigravity_chinese_patch__.dispose();
+ dom.window.close();
+});
+
+test('v3.0.2 translates 2.33.0 post-onboarding modals and home greeting with display name preservation', () => {
+ const body = `
+  <div role="dialog">
+   <div data-testid="post-onboarding-terms-body">
+    <h2 id="po-h2">One last thing before getting started…</h2>
+    <p id="po-sub">A few things to know, and a couple settings to review.</p>
+    <span id="po-opt">Optimized for you</span>
+    <span id="po-hurt">Built to help, not hurt</span>
+    <span id="po-ctrl">You are in control</span>
+    <span id="po-imp">Help us improve Antigravity.</span>
+   </div>
+   <button id="po-cont">Continue</button>
+  </div>
+  <div role="dialog">
+   <h2>Getting started with Google Antigravity</h2>
+   <div data-testid="post-onboarding-welcome-modal">
+    <p id="pw-sub">Here's how you and your agents work together</p>
+    <span id="pw-t1">Build with one agent or a team</span>
+    <button id="pw-btn">Get started</button>
+   </div>
+  </div>
+  <div data-testid="home-greeting">
+   <h1 id="hg-1">Hey 张璋, what should we build today?</h1>
+   <h1 id="hg-2">Welcome back, Alice. Where should we pick up?</h1>
+   <h1 id="hg-3">Good to see you. What's next?</h1>
+  </div>
+ `;
+ const dom = create(body);
+ const w = dom.window;
+ const d = w.document;
+ assert.equal(d.querySelector('#po-h2').textContent, '开始使用前的最后一步…');
+ assert.equal(d.querySelector('#po-sub').textContent, '了解几项重要说明，并确认相关设置。');
+ assert.equal(d.querySelector('#po-opt').textContent, '为你量身优化');
+ assert.equal(d.querySelector('#po-hurt').textContent, '旨在助力，而非添乱');
+ assert.equal(d.querySelector('#po-ctrl').textContent, '始终由你掌控');
+ assert.equal(d.querySelector('#po-imp').textContent, '帮助我们改进 Antigravity。');
+ assert.equal(d.querySelector('#po-cont').textContent, '继续');
+ assert.equal(d.querySelector('#pw-sub').textContent, '了解你与智能体的协作方式');
+ assert.equal(d.querySelector('#pw-t1').textContent, '使用单个智能体或智能体团队进行构建');
+ assert.equal(d.querySelector('#pw-btn').textContent, '开始使用');
+ assert.equal(d.querySelector('#hg-1').textContent, '你好，张璋，今天我们要构建什么？');
+ assert.equal(d.querySelector('#hg-2').textContent, '欢迎回来，Alice，我们从哪里继续？');
+ assert.equal(d.querySelector('#hg-3').textContent, '很高兴见到你，接下来做什么？');
+
+ w.__antigravity_chinese_patch__.setEnabled(false);
+ assert.equal(d.querySelector('#po-h2').textContent, 'One last thing before getting started…');
+ assert.equal(d.querySelector('#hg-1').textContent, 'Hey 张璋, what should we build today?');
+ w.__antigravity_chinese_patch__.dispose();
  dom.window.close();
 });

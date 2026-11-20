@@ -1022,7 +1022,7 @@ mod tests {
         let preload_hash = sha256_hex(fake_preload_bytes());
         let main_hash = sha256_hex(fake_main_bytes());
         let tray_hash = sha256_hex(fake_tray_bytes());
-        for ver in ["2.22.0", "2.23.0", "2.29.1", "2.31.2", "2.32.1", "2.32.2"] {
+        for ver in ["2.22.0", "2.23.0", "2.29.1", "2.31.2", "2.32.1", "2.32.2", "2.33.0"] {
             if let Some(rule) = m.verified_versions.get_mut(ver) {
                 rule.preload_sha256 = preload_hash.clone();
                 if let Some(tp) = rule.text_patches.get_mut("dist/preload.js") {
@@ -1098,7 +1098,7 @@ mod tests {
         let ops = MockInstallerOps::default();
         let dict = LoadedCustomDict::empty();
 
-        for ver in ["2.22.0", "2.23.0", "2.29.1", "2.31.2", "2.32.1", "2.32.2"] {
+        for ver in ["2.22.0", "2.23.0", "2.29.1", "2.31.2", "2.32.1", "2.32.2", "2.33.0"] {
             let (_tmp, root) = canonical_temp_dir();
             let (app, orig_asar) = create_darwin_app(&root, ver);
 

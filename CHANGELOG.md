@@ -1,5 +1,17 @@
 # 更新日志
 
+## [3.0.2] - 2026-11-20
+
+- 收录 macOS、Linux、Windows 三平台 Antigravity Desktop `2.33.0`（Build `2.33.0-4731201358004224`）精确指纹与 `dist/preload.js` / `dist/main.js` / `dist/tray.js` / `dist/menu.js` / `dist/updater.js` 共 23 条原生界面替换规则。
+- 在 `tools/compatibility.json` 与 `rust-src/compatibility.rs` 引入分平台 `native_ui_tested_platforms` 字段：`2.33.0` 的 `darwin` 与 `linux` 为 `true`，`win32` 保持 `false`（待实机桌面验收）。
+- 收紧 `rust-src/platform.rs` 中 `is_app_running` 的进程匹配为各平台可执行文件路径前缀匹配，避免调用方 CLI 参数或外壳脚本提及应用路径时触发运行状态误判。
+- 适配 Desktop `2.33.0` 新增界面与文案（主界面精确词条增至 **1,977 条**，动态正则增至 **54 条**）：
+  - 设置中心「浏览器」新增浏览数据清理与按站点管理 Cookie 弹窗（`browsing-data-row`、`browser-site-data-dialog`、`browser-clear-data-confirm` 及站点/Cookie 数量正则，严格保护域名与协议头）；
+  - 设置中心「快捷键」新增 VS Code 键位方案与跳转快捷键说明（`Keybinding Scheme` / `VS Code Default` / `VS Code Keyboard Shortcuts`）；
+  - 首次进入工作区条款确认弹窗（`post-onboarding-terms-body`）、入门指引弹窗（`post-onboarding-welcome-modal`）与首页多模板问候语（`home-greeting`，保留用户显示名称）；
+  - 自定义配置「插件套装（Bundles）」页面与来源风险审查弹窗（`bundles-page`、`bundle-detail`、`plugin-source-caution-modal`）、外部链接确认弹窗（`external-link-confirm-modal`）、Jujutsu 工作树选择器（`jj-worktree-selector-trigger`）、追问插入主对话、子智能体状态提示、访问受限屏及浏览器/阅读工具栏按钮。
+- Linux x64 已在 Instabox `box-856891`（Debian 13 x86_64 + XFCE `DISPLAY=:1`）完成 `2.33.0` 静态补丁（`doctor` → 非特权拦截 → `install` → 实机中英文切换 → 运行期 `restore` 拦截 → 重启保留中文 → `restore` 逐字节还原）与 `agy-zh run` 动态守护模式实机验证；macOS arm64（macOS 27.2.1）已完成 `2.33.0` 静态补丁生命周期（`doctor` / 确认参数拦截 / `install` / `codesign` 校验 / 实机中英文切换 / 运行期拦截 / 重启恢复 / `restore` 及 `spctl` 公证恢复）与 `agy-zh run` / `doctor` / `stop` 动态守护模式全闭环真机验证；Windows 已完成官方发行包 `app.asar` 指纹与规则校验，实机桌面待手工验收。
+
 ## [3.0.1] - 2026-11-18
 
 - 收录 macOS、Linux x64 的 Antigravity Desktop 2.32.2 精确指纹，沿用 23 条原生界面替换规则。Linux x64 已验证动态汉化、静态安装、重启与还原。Windows 2.32.2 继续使用结构锚点。

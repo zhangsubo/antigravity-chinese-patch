@@ -28,11 +28,23 @@ pub struct VerifiedVersionRule {
     #[serde(default)]
     pub native_ui_tested: bool,
     #[serde(default)]
+    pub native_ui_tested_platforms: Option<Vec<String>>,
+    #[serde(default)]
     pub main_swarm_hook: bool,
     #[serde(default)]
     pub text_patches: BTreeMap<String, VerifiedTextPatch>,
     #[serde(default)]
     pub optional_anchor_patches: BTreeMap<String, Vec<[String; 2]>>,
+}
+
+impl VerifiedVersionRule {
+    pub fn is_native_ui_tested(&self, platform: Platform) -> bool {
+        if let Some(platforms) = &self.native_ui_tested_platforms {
+            platforms.iter().any(|name| name == platform.as_str())
+        } else {
+            self.native_ui_tested
+        }
+    }
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -228,7 +240,7 @@ pub fn resolve_version_plan(
             mode: CompatibilityMode::Verified,
             entry: rule.entry.clone(),
             main_entry: "dist/main.js".to_string(),
-            native_ui_tested: rule.native_ui_tested,
+            native_ui_tested: rule.is_native_ui_tested(platform),
             main_swarm_hook: rule.main_swarm_hook && archive.has_regular_file("dist/main.js"),
             file_replacements,
             applied_anchors,
@@ -348,9 +360,13 @@ mod tests {
     fn embedded_manifest_loads_all_verified_versions() {
         let m = CompatibilityManifest::load_embedded().unwrap();
         assert_eq!(m.schema, 2);
-        for ver in ["2.22.0", "2.23.0", "2.29.1", "2.31.2", "2.32.1", "2.32.2"] {
+        for ver in ["2.22.0", "2.23.0", "2.29.1", "2.31.2", "2.32.1", "2.32.2", "2.33.0"] {
             assert!(m.verified_versions.contains_key(ver), "missing {ver}");
         }
+        let v2330 = &m.verified_versions["2.33.0"];
+        assert!(v2330.is_native_ui_tested(Platform::Linux));
+        assert!(v2330.is_native_ui_tested(Platform::Darwin));
+        assert!(!v2330.is_native_ui_tested(Platform::Win32));
         assert_eq!(m.anchor_rules.entry, "dist/preload.js");
     }
 

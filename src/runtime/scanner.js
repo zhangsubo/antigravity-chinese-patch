@@ -124,7 +124,7 @@ export function createScanner(translator, options = {}) {
   function translateAttrs(el) {
     if (!el || protectedContent(el) || skippedControl(el) ||
       (el.matches('[data-testid="title-menu-bar-item"]') && !['Workspace', 'View', 'Window'].includes(originalText(el))) ||
-      el.matches('[data-testid="ssh-config-file-name"],[data-testid="ssh-connect-host-option"],[data-testid="ssh-host-label"],[data-testid="branch-pill-trigger"]')) return;
+      el.matches('[data-testid="ssh-config-file-name"],[data-testid="ssh-connect-host-option"],[data-testid="ssh-host-label"],[data-testid="branch-pill-trigger"],[data-testid="external-link-confirm-uri"]')) return;
     let entry = attrRecords.get(el);
     for (const attr of ['title', 'aria-label']) {
       const current = el.getAttribute(attr);
@@ -495,9 +495,13 @@ export function createScanner(translator, options = {}) {
       '[data-testid="webview-download-show-in-folder"],[data-testid="webview-download-cancel"],' +
       '[data-testid="webview-download-remove"],[data-testid="webview-downloads-close"],' +
       '[data-testid="webview-url-bar-downloads"],' +
-      '[data-testid="conversation-telemetry-icon-button"],[data-testid="conversation-telemetry-indicator"]'
+      '[data-testid="conversation-telemetry-icon-button"],[data-testid="conversation-telemetry-indicator"],' +
+      '[data-testid="toolbar-text-selection-button"],[data-testid="toolbar-fit-mode-button"],[data-testid="toolbar-overflow-trigger"]'
     )) {
       translateAttrs(btn);
+    }
+    for (const el of document.querySelectorAll('[data-testid="browser-loopback-loading-state"]')) {
+      translateTree(el);
     }
   }
 
@@ -513,7 +517,14 @@ export function createScanner(translator, options = {}) {
         }
       }
     }
-    if (location.pathname === '/customizations') {
+    for (const el of document.querySelectorAll(
+      '[data-testid="bundles-page"],[data-testid="bundle-detail"],[data-testid="marketplace-bundles-banner"]'
+    )) {
+      translateTree(el);
+      for (const attrEl of el.querySelectorAll('[aria-label],[title]')) translateAttrs(attrEl);
+      for (const inp of el.querySelectorAll('input[placeholder]')) translatePlaceholder(inp);
+    }
+    if (location.pathname.startsWith('/customizations')) {
       for (const h2 of document.querySelectorAll('h2')) {
         if (originalText(h2) === 'Customizations') {
           const panel = h2.closest('.max-w-2xl')?.parentElement || h2.parentElement;
@@ -540,7 +551,10 @@ export function createScanner(translator, options = {}) {
 
   function scanDialogsAndWizards() {
     for (const marker of document.querySelectorAll(
-      '[data-testid="create-coordinator-submit"],[data-testid="coordinator-settings-save"],[data-testid="confirm-delete-side-question"]'
+      '[data-testid="create-coordinator-submit"],[data-testid="coordinator-settings-save"],[data-testid="confirm-delete-side-question"],' +
+      '[data-testid="browser-site-data-dialog"],[data-testid="browser-clear-data-confirm"],[data-testid="external-link-confirm-modal"],' +
+      '[data-testid="plugin-source-caution-modal"],[data-testid="command-hook-warning"],' +
+      '[data-testid="post-onboarding-terms-body"],[data-testid="post-onboarding-welcome-modal"]'
     )) {
       const dialog = marker.closest('[role="dialog"]');
       if (dialog) {
@@ -560,7 +574,8 @@ export function createScanner(translator, options = {}) {
       '[data-testid="file-tree-filter-empty"],[data-testid="csv-file-viewer"],' +
       '[data-testid="builtin-browser-caa-open-external"],[data-testid="onboarding-auth-code-panel"],' +
       '[data-testid="automation-model-unavailable"],[data-testid="browser-cert-interstitial"] h1,' +
-      '[data-testid="browser-cert-advanced-button"],[data-testid="browser-cert-back-button"]'
+      '[data-testid="browser-cert-advanced-button"],[data-testid="browser-cert-back-button"],' +
+      '[data-testid="jetbox-access-blocked-screen"]'
     )) {
       translateTree(el);
     }
@@ -574,6 +589,7 @@ export function createScanner(translator, options = {}) {
       '[data-testid="side-question-reply-send"],[data-testid="side-question-popout"],' +
       '[data-testid="side-question-tab-stop"],[data-testid="side-question-tab-promote"],' +
       '[data-testid="side-question-tab-delete"],[data-testid="side-question-resize-handle"],' +
+      '[data-testid="side-question-insert-to-main"],' +
       '[data-testid="selection-code-search-button"],[data-testid="side-panel-new-tab-button"],' +
       '[data-testid="comment-card-delete"],[data-testid="comment-card-edit"],' +
       '[data-testid="coordinator-worker-card"] + button,[data-testid="file-tree-filter-clear"],' +
@@ -671,14 +687,16 @@ export function createScanner(translator, options = {}) {
       '[data-testid="ssh-machine-switcher"],[data-testid="permissions-selector-trigger"],' +
       '[data-testid="model-selector-refresh"],[data-testid="setup-script-save-button"],' +
       '[data-testid="setup-script-validate-button"],[data-testid="setup-script-status"],' +
-      '[data-testid="setup-script-copy-button"]'
+      '[data-testid="setup-script-copy-button"],[data-testid="jj-worktree-selector-trigger"],' +
+      '[data-testid="jj-worktree-menu"],[data-testid="jj-previous-worktrees-menu"],' +
+      '[data-testid="ssh-sign-in-subtitle"]'
     )) {
       translateTree(el);
       translateAttrs(el);
     }
     for (const el of document.querySelectorAll(
       '[data-testid="ssh-host-label"],[data-testid="file-tree-filter-error"],' +
-      '[data-testid="onboarding-switch-to-auth-code"]'
+      '[data-testid="onboarding-switch-to-auth-code"],[data-testid="home-greeting"]'
     )) {
       translateTree(el);
     }

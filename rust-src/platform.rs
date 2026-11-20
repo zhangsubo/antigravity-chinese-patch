@@ -745,11 +745,18 @@ pub fn is_app_running(
                 if pid_opt == Some(self_pid) {
                     continue;
                 }
-                let norm = rest.replace('\\', "/").to_lowercase();
+                let norm = rest
+                    .trim_start()
+                    .trim_start_matches('"')
+                    .replace('\\', "/")
+                    .to_lowercase();
                 if norm.contains("patcher.py") || is_self_tool_command(&norm) {
                     continue;
                 }
-                if norm.contains(&exe_target) || norm.contains(&res_target) {
+                let matches_exe = norm
+                    .strip_prefix(&exe_target)
+                    .is_some_and(|tail| tail.is_empty() || tail.starts_with(' ') || tail.starts_with('"'));
+                if matches_exe || norm.starts_with(&res_target) {
                     return Ok(true);
                 }
             }
@@ -757,17 +764,23 @@ pub fn is_app_running(
         }
         Platform::Darwin => {
             let out = run_checked(ops, "/bin/ps", &["-axo", "pid=,command="])?;
-            let exe_prefix = format!("{}/", app.join("Contents/MacOS").to_string_lossy().replace('\\', "/"));
+            let app_norm = app.to_string_lossy().replace('\\', "/");
+            let macos_prefix = format!("{app_norm}/Contents/MacOS/");
+            let frameworks_prefix = format!("{app_norm}/Contents/Frameworks/");
+            let resources_prefix = format!("{app_norm}/Contents/Resources/");
             for line in out.stdout.lines() {
                 let (pid_opt, rest) = split_optional_pid_ws(line);
                 if pid_opt == Some(self_pid) {
                     continue;
                 }
-                let norm = rest.replace('\\', "/");
+                let norm = rest.trim_start().replace('\\', "/");
                 if is_self_tool_command(&norm) {
                     continue;
                 }
-                if norm.contains(&exe_prefix) {
+                if norm.starts_with(&macos_prefix)
+                    || norm.starts_with(&frameworks_prefix)
+                    || norm.starts_with(&resources_prefix)
+                {
                     return Ok(true);
                 }
             }
@@ -777,17 +790,18 @@ pub fn is_app_running(
             let out = run_checked(ops, "/bin/ps", &["-axo", "pid=,command="])?;
             let app_norm = app.to_string_lossy().replace('\\', "/");
             let exe_target = format!("{app_norm}/antigravity");
+            let exe_space = format!("{exe_target} ");
             let res_target = format!("{app_norm}/resources/");
             for line in out.stdout.lines() {
                 let (pid_opt, rest) = split_optional_pid_ws(line);
                 if pid_opt == Some(self_pid) {
                     continue;
                 }
-                let norm = rest.replace('\\', "/");
+                let norm = rest.trim_start().replace('\\', "/");
                 if norm.contains("patcher.py") || is_self_tool_command(&norm) {
                     continue;
                 }
-                if norm.contains(&exe_target) || norm.contains(&res_target) {
+                if norm == exe_target || norm.starts_with(&exe_space) || norm.starts_with(&res_target) {
                     return Ok(true);
                 }
             }
@@ -981,5 +995,59 @@ mod tests {
         };
         let err = ensure_writable(&[app.as_path()], Platform::Linux, &denied).unwrap_err();
         assert!(err.contains("Insufficient permissions"));
+    }
+
+    #[test]
+    fn cli_args_mentioning_app_path_do_not_trigger_running_false_positive() {
+        let darwin_app = PathBuf::from("/private/tmp/test/Antigravity.app");
+        let darwin_unrelated = MockPsOps {
+            stdout: concat!(
+                "46777 agy --dangerously-skip-permissions --prompt-interactive \"check /private/tmp/test/Antigravity.app/Contents/MacOS/Antigravity\"\n",
+                "89766 zsh -c 'ls /private/tmp/test/Antigravity.app/Contents/MacOS/Antigravity'\n",
+                "12345 /Applications/Antigravity.app/Contents/MacOS/Antigravity\n"
+            )
+            .to_string(),
+            writable: true,
+        };
+        assert!(!is_app_running(&darwin_app, Platform::Darwin, &darwin_unrelated).unwrap());
+
+        for real_cmd in [
+            "74988 /private/tmp/test/Antigravity.app/Contents/MacOS/Antigravity --remote-debugging-port=19222\n",
+            "74990 /private/tmp/test/Antigravity.app/Contents/Frameworks/Antigravity Helper.app/Contents/MacOS/Antigravity Helper --type=gpu-process\n",
+            "74991 /private/tmp/test/Antigravity.app/Contents/Resources/bin/language_server --standalone\n",
+        ] {
+            let darwin_running = MockPsOps {
+                stdout: real_cmd.to_string(),
+                writable: true,
+            };
+            assert!(
+                is_app_running(&darwin_app, Platform::Darwin, &darwin_running).unwrap(),
+                "expected running for: {real_cmd}"
+            );
+        }
+
+        let linux_app = PathBuf::from("/opt/Antigravity");
+        let linux_unrelated = MockPsOps {
+            stdout: "1001 bash -c 'cat /opt/Antigravity/antigravity /opt/Antigravity/resources/app.asar'\n".to_string(),
+            writable: true,
+        };
+        assert!(!is_app_running(&linux_app, Platform::Linux, &linux_unrelated).unwrap());
+        let linux_running = MockPsOps {
+            stdout: "1002 /opt/Antigravity/antigravity --type=renderer\n".to_string(),
+            writable: true,
+        };
+        assert!(is_app_running(&linux_app, Platform::Linux, &linux_running).unwrap());
+
+        let win_app = PathBuf::from(r"C:\Users\demo\AppData\Local\Programs\Antigravity");
+        let win_unrelated = MockPsOps {
+            stdout: r#"2001|C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -Command "Get-Item C:\Users\demo\AppData\Local\Programs\Antigravity\Antigravity.exe""#.to_string(),
+            writable: true,
+        };
+        assert!(!is_app_running(&win_app, Platform::Win32, &win_unrelated).unwrap());
+        let win_running = MockPsOps {
+            stdout: r#"2002|"C:\Users\demo\AppData\Local\Programs\Antigravity\Antigravity.exe" --remote-debugging-port=9222"#.to_string(),
+            writable: true,
+        };
+        assert!(is_app_running(&win_app, Platform::Win32, &win_running).unwrap());
     }
 }

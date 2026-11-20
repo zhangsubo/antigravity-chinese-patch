@@ -26,7 +26,11 @@ export const SKIP =
   '[data-testid="branch-repo-label"],[data-testid="branch-option"],' +
   '[data-agy-chip],[data-agy-pill],[data-agy-window-label],[data-agy-filter-item]:not(:first-child),' +
   '[data-agy-header] > span.truncate,[data-agy-strip-row] > span.truncate,' +
-  '.bg-transparent.min-w-0 > span.truncate[data-tooltip-id]';
+  '.bg-transparent.min-w-0 > span.truncate[data-tooltip-id],' +
+  '[data-testid="browser-site-data-site"] > div > span:first-of-type,[data-testid="external-link-confirm-uri"],' +
+  '[data-testid="jj-previous-worktree-option"],[data-testid="plugin-source-caution-modal"] span.font-medium.truncate,' +
+  '[data-testid="bundle-detail"] h1,[data-testid="step-plan-item"],' +
+  '[data-testid="lsp-hover-signature"],[data-testid="lsp-hover-body"],[data-testid="lsp-hover-tags"]';
 
 // Model/user data nodes, even when rendered inside a UI popup.
 export const CONTENT =
@@ -87,6 +91,16 @@ export const UI_TARGETS =
   '[data-testid="onboarding-switch-to-auth-code"],[data-testid="onboarding-brand-shell"],[data-agy-agents-pane],' +
   '[data-testid="project-folder-selection-step"],[data-testid="cloud-resource-disclosure-modal"],' +
   '[data-testid="title-menu-bar"],[data-testid="title-menu-bar-item"],[data-testid="title-menu-bar-option"],' +
+  '[data-testid="browsing-data-row"],[data-testid="browser-site-data-dialog"],[data-testid="browser-clear-data-confirm"],' +
+  '[data-testid="browser-loopback-loading-state"],[data-testid="external-link-confirm-modal"],' +
+  '[data-testid="plugin-source-caution-modal"],[data-testid="command-hook-warning"],' +
+  '[data-testid="jj-worktree-selector-trigger"],[data-testid="jj-worktree-menu"],[data-testid="jj-previous-worktrees-menu"],' +
+  '[data-testid="bundles-page"],[data-testid="bundle-detail"],[data-testid="marketplace-bundles-banner"],' +
+  '[data-testid="side-question-insert-to-main"],[data-testid="jetbox-access-blocked-screen"],' +
+  '[data-testid="ssh-sign-in-subtitle"],[data-testid="toolbar-text-selection-button"],' +
+  '[data-testid="toolbar-fit-mode-button"],[data-testid="toolbar-overflow-trigger"],' +
+  '[data-testid="post-onboarding-terms-body"],[data-testid="post-onboarding-welcome-modal"],' +
+  '[data-testid="home-greeting"],' +
   'input[placeholder="Search conversations..."]';
 
 export const settingsNavIds = new Set([
@@ -132,6 +146,8 @@ export const allowedFragments = new Set([
   'when working', 'in this project', 'in these conversations', 'when working in this project.',
   'Click', 'to open macOS Privacy & Security.', 'Then create the project in its window.',
   "Couldn't connect to", 'No hosts in', 'yet. Type one above.',
+  'Always open', 'links without asking',
+  'Inspect live bindings or record custom key chords filtered to', 'commands.',
 ]);
 
 export const navigationLabels = new Set([
@@ -233,6 +249,8 @@ export function createGuards(state) {
     if (sshConfigName && state.originalText(sshConfigName) !== '~/.ssh/config (default)') return true;
     const branchPill = element.closest('[data-testid="branch-pill-label"]');
     if (branchPill && !['Select branch', 'Repo default'].includes(state.originalText(branchPill))) return true;
+    const worktreeLabel = element.closest('[data-testid="jj-worktree-selector-label"]');
+    if (worktreeLabel && !['Local', 'New Worktree', 'Unknown Worktree'].includes(state.originalText(worktreeLabel))) return true;
     const titleMenuItem = element.closest('[data-testid="title-menu-bar-item"]');
     if (titleMenuItem && !['Workspace', 'View', 'Window'].includes(state.originalText(titleMenuItem))) return true;
     const button = element.closest('button');
