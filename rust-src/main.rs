@@ -3,6 +3,7 @@ mod cdp;
 mod compatibility;
 mod custom_dict;
 mod daemon;
+mod passkeys;
 mod patcher;
 mod platform;
 mod shortcut;

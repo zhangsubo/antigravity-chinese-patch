@@ -7,6 +7,7 @@ fn main() {
         "dist/desktop-runtime.js",
         "dist/swarm-runtime.js",
         "dist/main-swarm-hook.js",
+        "dist/passkey-status.js",
         "dist/zh-CN.bundle.json",
         "tools/compatibility.json",
     ];

@@ -1759,3 +1759,191 @@ test('v3.0.2 translates 2.33.0 post-onboarding modals and home greeting with dis
  w.__antigravity_chinese_patch__.dispose();
  dom.window.close();
 });
+
+test('v3.0.3 translates 2.34.0 sidebar customization, orchestrator picker, inline permission/question cards, marketplace filters, and terminal/vcs controls while protecting user data', () => {
+ const body = `
+  <aside aria-label="Sidebar">
+   <button data-testid="plugins-button">Plugins</button>
+   <button data-testid="customize-sidebar-button" aria-label="Customize Sidebar"></button>
+   <button data-testid="filter-sort-button" aria-label="Filter and Sort"></button>
+   <button data-testid="plugins-nav-more-button" aria-label="Plugins Options"></button>
+   <button data-testid="plugin-sidebar-more-button" aria-label="More options for Settings"></button>
+   <span data-testid="conversation-row-draft" aria-label="Unsent draft" title="Unsent draft"></span>
+  </aside>
+  <div role="dialog">
+   <h2>Customize Sidebar</h2>
+   <div data-testid="customize-sidebar-modal">
+    <span>Group By</span>
+    <span id="cs-none">None</span>
+    <button data-testid="customize-auto-pin" aria-label="Auto Pin"></button>
+    <span id="cs-idle">Idle Conversations</span>
+    <span id="cs-idle-tip">Only applies when grouped by status</span>
+    <span id="cs-auto">Show Automation Conversations</span>
+   </div>
+  </div>
+  <div role="menu">
+   <span id="m-nav-hdr">Show in Sidebar</span>
+   <div data-testid="plugins-nav-show-item" id="nav-plug-name">Settings</div>
+   <div data-testid="plugin-sidebar-hide-menu-item">Hide</div>
+   <div data-testid="plugin-sidebar-move-up-menu-item">Move Up</div>
+   <div data-testid="plugin-sidebar-move-down-menu-item">Move Down</div>
+  </div>
+  <section aria-label="Settings">
+   <h1>Settings</h1>
+   <nav><button>General</button><button>Application</button><button>Appearance</button></nav>
+   <article>
+    <h2>General</h2>
+    <span id="set-enter">Enter to send</span>
+    <span id="set-enter-desc">Choose which key sends a message in the chat composer.</span>
+    <h2>Models &amp; Usage</h2>
+    <span id="orch-title">Orchestrator Settings</span>
+    <span id="orch-model">Orchestrator Model</span>
+    <span id="orch-exec">Executor Model</span>
+   </article>
+  </section>
+  <div data-select-popup="">
+   <div data-testid="model-selector-orchestrator"><span>Orchestrator</span><span data-testid="model-selector-orchestrator-model" id="orch-def">The Orchestrator's own planner</span></div>
+   <div data-testid="orchestrator-picker-row"><span id="orch-pick-name">Default</span><span id="orch-pick-eff">Medium</span></div>
+   <div data-testid="model-selector-effort-header"><span>Thinking effort</span><span data-testid="model-selector-effort-info" aria-label="Controls how much time and quota the model spends reasoning before responding. Higher effort improves accuracy on hard problems, at the cost of slower responses and higher quota use."></span></div>
+  </div>
+  <div data-testid="inline-permission-card">
+   <span data-testid="inline-permission-badge"><span>Runtime permission</span></span>
+   <button data-testid="subagent-permission-source">Open Settings</button>
+   <span data-testid="permission-app-header">General</span>
+   <span id="ip-title">Settings</span>
+   <dl data-testid="permission-download-details"><dt id="ip-dt">File</dt><dd id="ip-dd">Settings</dd></dl>
+   <div data-testid="inline-permission-unsandboxed-warning"><span>Confirm the command is safe to run outside of the sandbox with full network and disk access.</span></div>
+   <textarea data-testid="permission-target-editor" aria-label="Edit permission target">Settings</textarea>
+   <div role="radiogroup" aria-label="Permission approval scope">
+    <button data-testid="inline-permission-scope-once"><span>1</span><span id="ips-once">Yes, allow this time</span></button>
+    <button data-testid="inline-permission-scope-conv"><span>2</span><span id="ips-conv">Yes, allow for this conversation</span></button>
+    <button data-testid="inline-permission-scope-dyn"><span>3</span><span id="ips-dyn">Yes, always allow example.com</span></button>
+   </div>
+   <input data-testid="inline-permission-deny-note" placeholder="Tell the agent what to do instead...">
+   <button data-testid="inline-permission-add-note"><span>Deny with note</span></button>
+   <button data-testid="inline-permission-in-chat">In chat</button>
+   <button data-testid="inline-permission-deny">Deny</button>
+   <button data-testid="inline-permission-allow">Allow once</button>
+  </div>
+  <div data-testid="inline-card" data-inline-card-state="question">
+   <dl data-testid="inline-card-details"><dt id="ic-dt">Settings</dt><dd id="ic-dd">General</dd></dl>
+   <div data-testid="inline-card-risk" id="ic-risk">Settings</div>
+   <button data-testid="inline-card-option-1" id="ic-opt">Yes, allow</button>
+   <input data-testid="inline-card-approval-note" placeholder="Add a note or condition...">
+   <textarea data-testid="inline-card-write-in" aria-label="Other answer" placeholder="Other (write your answer)"></textarea>
+   <button data-testid="inline-card-add-note"><span>Add note</span></button>
+   <button data-testid="inline-card-in-chat">In chat</button>
+   <button data-testid="inline-card-skip">Skip</button>
+   <button data-testid="inline-card-next">Next</button>
+   <button data-testid="inline-card-submit">Submit</button>
+  </div>
+  <div data-testid="inline-card" data-inline-card-state="superseded"><span>Replaced by newer request</span></div>
+  <div data-testid="inline-card" data-inline-card-state="expired"><span>Expired · Action not taken</span><button data-testid="inline-card-retry"><span>Ask to retry</span></button></div>
+  <div data-testid="inline-card" data-inline-card-state="answered"><span>Answered: </span><span id="ic-ans">Settings</span></div>
+  <button data-testid="marketplace-filter-button" aria-label="Filter plugins"></button>
+  <div role="menu" data-testid="marketplace-filter-menu"><span>Category</span></div>
+  <p data-testid="marketplace-ranking-label">Most popular first</p>
+  <span data-testid="customization-new-badge" id="cust-new">New</span>
+  <div data-testid="load-more-status-pill"><button><span>No messages in last 20 steps · Load more</span></button></div>
+  <button data-testid="suggested-action-row-cloud-env-setup"><span>Set up my environment</span></button>
+  <button data-testid="suggested-action-dismiss-cloud-env-setup" aria-label="Dismiss suggestion"></button>
+  <button data-testid="terminal-selection-popup-quote-button"><span>Quote</span></button>
+  <button data-testid="terminal-selection-popup-side-question-button"><span>Side Question</span></button>
+  <button data-testid="coordinator-worker-stop" aria-label="Stop Subagent"></button>
+  <div role="dialog">
+   <h2>Commit</h2>
+   <textarea data-testid="vcs-commit-message" placeholder="Describe your changes, or leave empty to auto-generate"></textarea>
+   <button id="vcs-cancel">Cancel</button>
+   <button data-testid="vcs-commit-submit">Commit</button>
+  </div>
+  <div data-agy-agents-pane="">
+   <div data-agy-empty="">
+    <span data-agy-screen-locked="">Screen locked: agents can't use this Mac until you unlock it</span>
+    <span data-agy-empty-working="">2 agents working, live preview unavailable</span>
+   </div>
+  </div>
+ `;
+ const dom = create(body);
+ const w = dom.window;
+ const d = w.document;
+ assert.equal(d.querySelector('[data-testid="plugins-button"]').textContent, '插件（Plugins）');
+ assert.equal(d.querySelector('[data-testid="customize-sidebar-button"]').getAttribute('aria-label'), '自定义侧边栏');
+ assert.equal(d.querySelector('[data-testid="filter-sort-button"]').getAttribute('aria-label'), '筛选与排序');
+ assert.equal(d.querySelector('[data-testid="plugins-nav-more-button"]').getAttribute('aria-label'), '插件选项');
+ assert.equal(d.querySelector('[data-testid="plugin-sidebar-more-button"]').getAttribute('aria-label'), 'Settings 的更多选项');
+ assert.equal(d.querySelector('[data-testid="conversation-row-draft"]').getAttribute('title'), '未发送的草稿');
+ assert.equal(d.querySelector('[data-testid="customize-sidebar-modal"]').parentElement.querySelector('h2').textContent, '自定义侧边栏');
+ assert.equal(d.querySelector('#cs-none').textContent, '不分组');
+ assert.equal(d.querySelector('[data-testid="customize-auto-pin"]').getAttribute('aria-label'), '自动置顶');
+ assert.equal(d.querySelector('#cs-idle').textContent, '空闲对话');
+ assert.equal(d.querySelector('#cs-idle-tip').textContent, '仅在按状态分组时生效');
+ assert.equal(d.querySelector('#cs-auto').textContent, '显示自动化对话');
+ assert.equal(d.querySelector('#m-nav-hdr').textContent, '在侧边栏中显示');
+ assert.equal(d.querySelector('#nav-plug-name').textContent, 'Settings');
+ assert.equal(d.querySelector('[data-testid="plugin-sidebar-hide-menu-item"]').textContent, '隐藏');
+ assert.equal(d.querySelector('#set-enter').textContent, '按 Enter 发送');
+ assert.equal(d.querySelector('#set-enter-desc').textContent, '选择在对话输入框中发送消息的按键方式。');
+ assert.equal(d.querySelector('#orch-title').textContent, '编排器（Orchestrator）设置');
+ assert.equal(d.querySelector('#orch-model').textContent, '编排模型');
+ assert.equal(d.querySelector('#orch-exec').textContent, '执行模型');
+ assert.equal(d.querySelector('[data-testid="model-selector-orchestrator"] > span:first-child').textContent, '编排器（Orchestrator）');
+ assert.equal(d.querySelector('#orch-def').textContent, '使用编排器自身的规划模型');
+ assert.equal(d.querySelector('#orch-pick-name').textContent, 'Default');
+ assert.equal(d.querySelector('#orch-pick-eff').textContent, '中');
+ assert.equal(d.querySelector('[data-testid="model-selector-effort-header"] > span:first-child').textContent, '思考强度');
+ assert.match(d.querySelector('[data-testid="model-selector-effort-info"]').getAttribute('aria-label'), /控制模型在回复前用于推理的时间与配额/);
+ assert.equal(d.querySelector('[data-testid="inline-permission-badge"]').textContent, '运行时权限');
+ assert.equal(d.querySelector('[data-testid="subagent-permission-source"]').textContent, 'Open Settings');
+ assert.equal(d.querySelector('[data-testid="permission-app-header"]').textContent, 'General');
+ assert.equal(d.querySelector('#ip-title').textContent, 'Settings');
+ assert.equal(d.querySelector('#ip-dt').textContent, '文件');
+ assert.equal(d.querySelector('#ip-dd').textContent, 'Settings');
+ assert.match(d.querySelector('[data-testid="inline-permission-unsandboxed-warning"]').textContent, /沙盒外运行/);
+ assert.equal(d.querySelector('[data-testid="permission-target-editor"]').getAttribute('aria-label'), '编辑授权目标');
+ assert.equal(d.querySelector('#ips-once').textContent, '是，仅允许本次');
+ assert.equal(d.querySelector('#ips-conv').textContent, '是，在此对话中允许');
+ assert.equal(d.querySelector('#ips-dyn').textContent, 'Yes, always allow example.com');
+ assert.equal(d.querySelector('[data-testid="inline-permission-deny-note"]').getAttribute('placeholder'), '告诉智能体改用什么方式处理...');
+ assert.equal(d.querySelector('[data-testid="inline-permission-add-note"]').textContent, '附言拒绝');
+ assert.equal(d.querySelector('[data-testid="inline-permission-in-chat"]').textContent, '在对话中查看');
+ assert.equal(d.querySelector('[data-testid="inline-permission-deny"]').textContent, '禁止');
+ assert.equal(d.querySelector('[data-testid="inline-permission-allow"]').textContent, '仅允许本次');
+ assert.equal(d.querySelector('#ic-dt').textContent, 'Settings');
+ assert.equal(d.querySelector('#ic-dd').textContent, 'General');
+ assert.equal(d.querySelector('#ic-risk').textContent, 'Settings');
+ assert.equal(d.querySelector('#ic-opt').textContent, 'Yes, allow');
+ assert.equal(d.querySelector('[data-testid="inline-card-approval-note"]').getAttribute('placeholder'), '添加备注或条件...');
+ assert.equal(d.querySelector('[data-testid="inline-card-write-in"]').getAttribute('aria-label'), '其他回答');
+ assert.equal(d.querySelector('[data-testid="inline-card-write-in"]').getAttribute('placeholder'), '其他（请填写你的回答）');
+ assert.equal(d.querySelector('[data-testid="inline-card-add-note"]').textContent, '添加备注');
+ assert.equal(d.querySelector('[data-testid="inline-card-skip"]').textContent, '跳过');
+ assert.equal(d.querySelector('[data-testid="inline-card-next"]').textContent, '下一步');
+ assert.equal(d.querySelector('[data-testid="inline-card-submit"]').textContent, '提交');
+ assert.equal(d.querySelector('[data-inline-card-state="superseded"]').textContent, '已被新请求替代');
+ assert.equal(d.querySelector('[data-inline-card-state="expired"] > span').textContent, '已过期 · 未执行操作');
+ assert.equal(d.querySelector('[data-testid="inline-card-retry"]').textContent, '请求重试');
+ assert.equal(d.querySelector('[data-inline-card-state="answered"] > span:first-child').textContent, '已回答： ');
+ assert.equal(d.querySelector('#ic-ans').textContent, 'Settings');
+ assert.equal(d.querySelector('[data-testid="marketplace-filter-button"]').getAttribute('aria-label'), '筛选插件');
+ assert.equal(d.querySelector('[data-testid="marketplace-filter-menu"]').textContent, '分类');
+ assert.equal(d.querySelector('[data-testid="marketplace-ranking-label"]').textContent, '按最受欢迎排序');
+ assert.equal(d.querySelector('#cust-new').textContent, '新');
+ assert.equal(d.querySelector('[data-testid="load-more-status-pill"]').textContent, '最近 20 步内无消息 · 加载更早消息');
+ assert.equal(d.querySelector('[data-testid="suggested-action-row-cloud-env-setup"]').textContent, '配置我的运行环境');
+ assert.equal(d.querySelector('[data-testid="suggested-action-dismiss-cloud-env-setup"]').getAttribute('aria-label'), '关闭建议');
+ assert.equal(d.querySelector('[data-testid="terminal-selection-popup-quote-button"]').textContent, '引用');
+ assert.equal(d.querySelector('[data-testid="terminal-selection-popup-side-question-button"]').textContent, '旁路提问');
+ assert.equal(d.querySelector('[data-testid="coordinator-worker-stop"]').getAttribute('aria-label'), '停止子智能体');
+ assert.equal(d.querySelector('[data-testid="vcs-commit-message"]').getAttribute('placeholder'), '描述你的变更，留空则自动生成');
+ assert.equal(d.querySelector('[data-testid="vcs-commit-submit"]').textContent, '提交');
+ assert.equal(d.querySelector('[data-agy-screen-locked]').textContent, '屏幕已锁定：解锁前智能体无法操作此 Mac');
+ assert.equal(d.querySelector('[data-agy-empty-working]').textContent, '2 个智能体正在工作，实时预览不可用');
+
+ w.__antigravity_chinese_patch__.setEnabled(false);
+ assert.equal(d.querySelector('[data-testid="plugins-button"]').textContent, 'Plugins');
+ assert.equal(d.querySelector('#ips-conv').textContent, 'Yes, allow for this conversation');
+ assert.equal(d.querySelector('#cust-new').textContent, 'New');
+ assert.equal(d.querySelector('[data-testid="load-more-status-pill"]').textContent, 'No messages in last 20 steps · Load more');
+ w.__antigravity_chinese_patch__.dispose();
+ dom.window.close();
+});

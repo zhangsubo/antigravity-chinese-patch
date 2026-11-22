@@ -393,6 +393,31 @@ pub fn poll_and_inject(
          }})()"
     );
 
+    // Read only the language switch from desktop pages, and only while a
+    // verified native sheet is open. Skip ambiguous multi-window preferences.
+    let sheets: Vec<_> = targets.iter().filter(|target| {
+        target.target_type == "page"
+            && target.ws_url.as_deref().is_some_and(|ws| validate_ws_url(ws, port))
+            && crate::passkeys::is_native_sheet(&target.url)
+    }).collect();
+    if !sheets.is_empty() {
+        let mut states = targets.iter()
+            .filter(|t| classify_target(t, port) == TargetKind::MainDesktop)
+            .filter_map(|t| eval_cdp_js(t.ws_url.as_deref()?, port,
+                "window.__antigravity_chinese_patch__?.isEnabled()").ok()?.as_bool());
+        if let Some(enabled) = states.next() {
+            if states.all(|state| state == enabled) {
+                let render = include_str!("../dist/passkey-status.js");
+                let expression = format!("{render}({enabled})");
+                for sheet in sheets {
+                    if eval_cdp_js(sheet.ws_url.as_deref().unwrap(), port, &expression).is_err() {
+                        report.errors.push("Passkeys status renderer unavailable".to_owned());
+                    }
+                }
+            }
+        }
+    }
+
     for target in targets {
         let kind = classify_target(&target, port);
         if kind == TargetKind::Ignore {

@@ -322,5 +322,29 @@
     "regex": "^Good to see you, (.+)\\. What's next\\?$",
     "flags": "",
     "replacement": "很高兴见到你，$1，接下来做什么？"
+  },
+  {
+    "id": "more-options-for",
+    "regex": "^More options for (.+)$",
+    "flags": "",
+    "replacement": "$1 的更多选项"
+  },
+  {
+    "id": "mcp-servers-failed-to-start",
+    "regex": "^(\\d+) MCP servers? failed to start$",
+    "flags": "",
+    "replacement": "$1 个 MCP 服务器启动失败"
+  },
+  {
+    "id": "no-messages-in-last-steps",
+    "regex": "^No messages in last (\\d+) steps [—·,] [Ll]oad (?:older|more)$",
+    "flags": "",
+    "replacement": "最近 $1 步内无消息 · 加载更早消息"
+  },
+  {
+    "id": "agents-working-preview-unavailable",
+    "regex": "^(\\d+) agents? working, live preview unavailable$",
+    "flags": "",
+    "replacement": "$1 个智能体正在工作，实时预览不可用"
   }
 ]

@@ -1,4 +1,4 @@
-export const VERSION = '3.0.2';
+export const VERSION = '3.0.3';
 export const GLOBAL_KEY = '__antigravity_chinese_patch__';
 export const LEGACY_KEY = '__teacherxu_antigravity_zh__';
 export const SWARM_GLOBAL_KEY = '__antigravity_chinese_patch_swarm__';

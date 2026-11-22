@@ -30,7 +30,11 @@ export const SKIP =
   '[data-testid="browser-site-data-site"] > div > span:first-of-type,[data-testid="external-link-confirm-uri"],' +
   '[data-testid="jj-previous-worktree-option"],[data-testid="plugin-source-caution-modal"] span.font-medium.truncate,' +
   '[data-testid="bundle-detail"] h1,[data-testid="step-plan-item"],' +
-  '[data-testid="lsp-hover-signature"],[data-testid="lsp-hover-body"],[data-testid="lsp-hover-tags"]';
+  '[data-testid="lsp-hover-signature"],[data-testid="lsp-hover-body"],[data-testid="lsp-hover-tags"],' +
+  '[data-testid="plugins-nav-show-item"],[data-testid="orchestrator-picker-row"] > span:first-child,' +
+  '[data-testid="subagent-permission-source"],[data-testid="permission-app-header"],' +
+  '[data-testid="inline-card-details"] dd,[data-testid="inline-card-risk"],' +
+  '[data-testid^="inline-card-option-"]';
 
 // Model/user data nodes, even when rendered inside a UI popup.
 export const CONTENT =
@@ -101,6 +105,18 @@ export const UI_TARGETS =
   '[data-testid="toolbar-fit-mode-button"],[data-testid="toolbar-overflow-trigger"],' +
   '[data-testid="post-onboarding-terms-body"],[data-testid="post-onboarding-welcome-modal"],' +
   '[data-testid="home-greeting"],' +
+  '[data-testid="customize-sidebar-button"],[data-testid="customize-sidebar-modal"],' +
+  '[data-testid="filter-sort-button"],[data-testid="plugins-nav-more-button"],' +
+  '[data-testid="plugin-sidebar-more-button"],[data-testid="conversation-row-draft"],' +
+  '[data-testid="marketplace-filter-button"],[data-testid="marketplace-filter-menu"],' +
+  '[data-testid="marketplace-ranking-label"],[data-testid="customization-new-badge"],' +
+  '[data-testid="model-selector-effort-header"],[data-testid="model-selector-effort-info"],' +
+  '[data-testid="model-selector-orchestrator"],[data-testid="load-more-status-pill"],' +
+  '[data-testid="suggested-action-row-cloud-env-setup"],[data-testid="suggested-action-dismiss-cloud-env-setup"],' +
+  '[data-testid="terminal-selection-popup-quote-button"],[data-testid="terminal-selection-popup-side-question-button"],' +
+  '[data-testid="vcs-commit-message"],[data-testid="vcs-commit-submit"],' +
+  '[data-testid="coordinator-worker-stop"],[data-testid="inline-permission-card"],' +
+  '[data-testid="inline-card"],' +
   'input[placeholder="Search conversations..."]';
 
 export const settingsNavIds = new Set([
@@ -152,12 +168,12 @@ export const allowedFragments = new Set([
 
 export const navigationLabels = new Set([
   'New Conversation', 'Conversation History', 'Automations',
-  'Scheduled Tasks', 'Customizations', 'Settings', 'Provide Feedback', 'Give Feedback',
+  'Scheduled Tasks', 'Customizations', 'Plugins', 'Settings', 'Provide Feedback', 'Give Feedback',
   'Chief of Staff',
 ]);
 
 export const sidebarTestIds = new Set([
-  'automations-button', 'settings-button',
+  'automations-button', 'settings-button', 'plugins-button',
   'new-conversation-button', 'history-button', 'customizations-button', 'concierge-button',
 ]);
 
@@ -200,6 +216,7 @@ export const overviewSafeTexts = new Set([
 export const permissionOptionSafeTexts = new Set([
   'Yes, allow', 'Yes, allow this time',
   'Yes, allow this download', 'Yes, save rule in this conversation',
+  'Yes, allow for this conversation',
   'Yes, and always allow in this conversation', 'Yes, save rule globally',
   'Yes, and always allow',
 ]);

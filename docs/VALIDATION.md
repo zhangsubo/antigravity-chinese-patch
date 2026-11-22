@@ -1,5 +1,52 @@
 # 验证记录
 
+## 2026-11-22 · macOS arm64 · 2.34.0 Passkey 连接提示修复
+
+- 使用该版本的 Electron、官方窗口创建函数和 HTML 模板，以测试用二维码打开独立窗口。动态模式通过实际 CDP 守护接入。静态模式从已安装补丁的 ASAR 提取窗口函数和主进程钩子，验证后还原副本。
+- 两种模式均观察到连接提示从中文切回英文，再切回中文。应用写入后续验证提示时可正常覆盖。相邻对照窗口保持英文。此测试未进行实体手机配对。
+- 自动化回归通过 41 项 JavaScript 和 25 项 macOS Rust 测试。
+
+## 2026-11-22 · Desktop 2.34.0 / agy-zh 3.0.3（Linux 候选阶段记录）
+
+### 1. 测试环境、包指纹与本地离线门禁
+- **分支 / 工作区**：`compat/antigravity-2.34.0-auto`（合并前快照）。
+- **目标发行版**：官方 **Antigravity Desktop `2.34.0-5887025308631040`**（embedded `language_server` CL `1026637980`）。
+  - 跨平台 `resources/app.asar` SHA-256（Linux / macOS / Windows 一致）：`8934adef0622c9271c92eea950a71848764a66f7b10023ccbd82e54b959adb0e`
+  - Linux x64 `Antigravity.tar.gz`：`478c68f86c9ef61a502185a39e9ceec66b1276a6a53b191a19b0d9ce869836db`；主程序 `antigravity`：`3ba9114b7fbaafaf548f72c5d1bc86b7dc81098a85361784359c2c1199625bfc`（Electron fuses `101100011`）
+  - macOS arm64 `Antigravity.zip`：`bb564db95b79761e66a58605ddf4d67020ede8865f902b8b7412f87bd384cc91`；`Antigravity.dmg`：`385c89149ac0d81a8e16ef032cf76b84957ba7db2e4d28f4a357ddba2e0181c9`；`Info.plist` `ElectronAsarIntegrity`：`a21c360633bad81b766b2fae72c5a3616ee83db0682ddbfed214c4b026f2e572`
+  - Windows x64 `Antigravity-x64.exe`：`7c34f5aecbb269a182b12f63fd8f4f7e3bb4a893f23490d99735b137a7e881bd`；解包 `Antigravity.exe`：`e6e079e99befbfe2786e7587a480117772e5ca974d0169f7e6dc996e0294858`（Electron fuses `101100011`）
+- **产物与离线测试**（`node tools/build-payloads.mjs` / `npm test` / `npm run build`）：
+  - 主词库：**2,164** 条精确词条 + **58** 条动态规则；Swarm 词库：**153** 条专用精确词条 + **7** 条规则；`bundleFingerprint: "3.0.3-6a3e6ce39534"`；内置 `payload_sha256`: `2a2c9185f268ffb4a8aada5934c379c1d7a87338ed04b22b77dd2f5136f765b0`。
+  - **JS DOM / Swarm / 漂移测试**：**39 / 39** 通过；**Rust 单测 (`cargo test`)**：**24 / 24** 通过（涵盖 3 平台 `is_native_ui_tested` 断言与 2.34.0 版本）。
+  - **漂移检测 (`tools/drift-detector.mjs`)**：扫描 2.34.0 `app.asar`（`175` 文件 / `556` 候选 / `18` 命中 / `falsePositiveCount: 0`）与 Web UI `main.js`（`12,581,273` bytes / `7,650` 候选 / `1,564` 精确 + `2` 规则命中 / `falsePositiveCount: 0`）。
+  - **三平台解包 `agy-zh doctor --app ...`**：Linux（`native_ui_tested: true`）、macOS（`native_ui_tested: false`）、Windows（`native_ui_tested: false`）均报告 `version: "2.34.0"`、`compatibility_mode: "verified"`、`main_swarm_hook: true` 与 `12 core + 11 optional = 23` 锚点命中。
+
+### 2. Linux x64 真实桌面实测结果（Instabox `box-856891` · Debian 13 x86_64 · XFCE · `DISPLAY=:1`）
+- **远程构建与单测**：在 `box-856891` 上同步补丁源码至 `/data/workspace/agy-login-2.32.2.g1d3Bn/patch`，执行 `npm test`（39 JS + 24 Rust 全通过）与 `npm run build`（`agy-zh 3.0.3`）。
+- **静态补丁全生命周期**（`/opt/Antigravity`，独立临时配置 `/tmp/ag-2.34.0-static-profile`，证据位于远程 `/data/workspace/agy-login-2.32.2.g1d3Bn/evidence-2.34.0/`）：
+  1. `agy-zh doctor`（安装前，免 `--app` 自动识别 `/opt/Antigravity`）：退出码 `0`，`version: "2.34.0"`，`patched: false`，`native_ui_tested: true`。
+  2. 非 root `./target/release/agy-zh install`：退出码 `1`（触发权限拦截 `Insufficient permissions to modify /opt`）。
+  3. `sudo ./target/release/agy-zh install`：退出码 `0`，`patched: true`，补丁后 `app.asar` SHA-256 `5310b1d508af9a667ebeb0e4ad2cf28b049c9d7650821db107daacbe41a0a947`，生成备份 `/opt/Antigravity.zh-cn-original` 与 `.zh-cn-state.json`；安装后 `doctor` 退出码 `0`。
+  4. 在 `DISPLAY=:1` 启动 `/opt/Antigravity/antigravity`（端口 `41234`，`xwininfo` 确认 `Antigravity` X11 窗口 `933x649`）：初始中文 UI（悬浮球 `中文 · 开`、顶栏 `工作区 / 视图 / 窗口`、侧栏、条款弹窗 `开始使用前的最后一步…`）与 Swarm iframe（含 2.34.0 新增 `蜂巢 / 提及 / 导出 GIF / 在新标签页中打开`）均正常汉化；点击悬浮球切换至英文（`中文 · 关`）恢复主界面及 Swarm 原文；再次点击切回中文。
+  5. 运行态保护检查：`sudo ./target/release/agy-zh restore`（进程未退出时）：退出码 `1`（阻止运行态还原）。
+  6. 彻底退出并重启 `/opt/Antigravity/antigravity`：重启后默认保持中文激活（`中文 · 开`，顶栏/侧栏/Swarm 均直接中文）。
+  7. 彻底退出并执行 `sudo ./target/release/agy-zh restore`：退出码 `0`，`/opt/Antigravity/resources/app.asar` 校验恢复原版 SHA-256 `8934adef0622c9271c92eea950a71848764a66f7b10023ccbd82e54b959adb0e`，备份与状态文件已清理，还原后 `doctor` 退出码 `0`（`patched: false`），并删除 `/tmp/ag-2.34.0-static-profile`。
+- **动态 CDP 模式**（`/data/workspace/agy-login-2.32.2.g1d3Bn/Antigravity-x64`，保护并复用既有已登录 `--user-data-dir=/data/workspace/agy-login-2.32.2.g1d3Bn/profile`，端口 `41171`）：
+  1. 启动 `2.34.0` 后执行 `agy-zh run --app ... --port 41171`（退出码 `0`）与 `agy-zh doctor --app ...`（退出码 `0`，`patched: false`，`cdp_daemon_running: true`，`cdp_endpoint_reachable: true`）。
+  2. 验证已登录主界面中文（顶栏 `工作区 / 视图 / 窗口`、侧栏 `新建对话 / 自动化 / 自定义配置 / 项目 / 设置`、`你好，张璋，今天我们要构建什么？`、`Gemini 4 Neon 高`、`中文 · 开`）、点击切换英文（`中文 · 关`）与切回中文（`中文 · 开`），以及`设置 -> 通用 / 应用（显示应用版本 2.34.0）/ 浏览器 / 快捷键` 各分页真实渲染与截图（其中设置 `通用` 小节标题 `Input Box`、快捷键 `Side Question Selection` 及右下角新模型推广卡片 `Introducing Gemini 4 Neon / Dismiss` 保持原文，条款勾选框 JSX 混排富文本前缀 `帮助我们改进 Antigravity。` / `获取最新动态。` 汉化而内嵌英文句保留）。
+  3. 执行 `agy-zh stop`：退出码 `0`，`doctor` 确认 `cdp_daemon_running: false`；再次 `agy-zh run --app ... --port 41171`（退出码 `0`）恢复守护，且 `/data/workspace/agy-login-2.32.2.g1d3Bn/Antigravity-x64/resources/app.asar` 与 `/opt/Antigravity/resources/app.asar` SHA-256 均为原版 `8934adef...`。
+- **关键远程证据路径**（`box-856891:/data/workspace/agy-login-2.32.2.g1d3Bn/evidence-2.34.0/`）：
+  - 日志：`tests-2.34.0.log`、`build-2.34.0.log`、`static-install.log`、`static-app.log`、`static-toggle-and-guard.log`、`static-app-restart.log`、`static-restart-and-restore.log`、`dynamic-app.log`、`dynamic-run.log`、`dynamic-ui-verify.log`、`dynamic-ui-verify-2.log`、`dynamic-stop-rerun.log`
+  - 截图：`linux-2.34.0-static-zh-1.png`、`linux-2.34.0-static-en.png`、`linux-2.34.0-static-zh-2.png`、`linux-2.34.0-static-restart-zh.png`、`linux-2.34.0-dynamic-main-zh.png`、`linux-2.34.0-dynamic-main-en.png`、`linux-2.34.0-dynamic-settings-general-zh.png`、`linux-2.34.0-dynamic-settings-browser-zh.png`、`linux-2.34.0-dynamic-settings-shortcuts-zh.png`、`linux-2.34.0-dynamic-final-zh.png`（已拉取并在本地目视检查关键 PNG，渲染清晰无排版破损）。
+
+### macOS 补测与发布矩阵
+
+在 Apple Silicon Mac 的官方 2.34.0 副本上验证静态安装、登录页中英切换、重启、运行中还原保护，以及退出后还原。ASAR 和 Info.plist 哈希恢复，Gatekeeper 验签通过。动态模式在日常客户端验证了设置与 Swarm 中英联动，核对了「蜂巢」「提及」「导出 GIF」。Windows x64 已核验包指纹，尚未进行桌面验收。
+
+## 2026-11-21 · Desktop 2.33.1
+
+官方构建 `2.33.1-5402359824777216` 在 macOS arm64、Linux x64、Windows x64 使用相同的 ASAR，SHA-256 为 `6b34bbd773e8ebc7079ad4bb8ac242797757d309d157d1f45d14188f6529cdd7`。5 个脚本的 23 条替换规则全部唯一命中。macOS arm64 验证了静态安装、中英切换、重启、还原及签名恢复，并在原版窗口验证动态接入。Linux x64 桌面验证了双模式、主窗口及 Swarm；Windows x64 已验证包指纹，尚未进行桌面验收。
+
 ## 2026-11-19 ~ 2026-11-20 · Desktop 2.33.0 / agy-zh 3.0.2（macOS arm64 与 Linux x64 桌面实测通过；Windows 包指纹核验完成、实机待验收）
 
 - **三平台官方发行包 `2.33.0-4731201358004224` 核验**：

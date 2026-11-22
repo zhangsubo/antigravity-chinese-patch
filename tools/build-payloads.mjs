@@ -5,6 +5,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import vm from 'node:vm';
 import { RUNTIME_MARKER, SWARM_MARKER, VERSION } from '../src/shared/constants.js';
+import { updatePasskeyStatus } from '../src/runtime/passkey-status.js';
 import { installSwarmFrames } from '../src/swarm/main-frame-hook.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
@@ -419,9 +420,12 @@ export function buildAllPayloads({ write = true } = {}) {
     `  mountSwarmRuntime(__SWARM_DATA__, { fingerprint: ${JSON.stringify(swarmFingerprint)} });\n` +
     `})();\n`;
 
+  const connecting = 'Connecting to your device…';
+  if (!bundle.exact[connecting]) throw new Error('Missing Passkeys connection status translation');
+  const passkeyRuntime = `(enabled => (${updatePasskeyStatus.toString()})(enabled, ${JSON.stringify(connecting)}, ${JSON.stringify(bundle.exact[connecting])}))`;
   const mainSwarmHook =
     `// --- Antigravity Chinese Patch Swarm Hook Start ---\n` +
-    `;(${installSwarmFrames.toString()})(${JSON.stringify(swarmRuntime)});\n` +
+    `;(${installSwarmFrames.toString()})(${JSON.stringify(swarmRuntime)}, ${JSON.stringify(passkeyRuntime)});\n` +
     `// --- Antigravity Chinese Patch Swarm Hook End ---\n`;
 
   // Syntax check all generated JS artifacts before writing
@@ -434,6 +438,7 @@ export function buildAllPayloads({ write = true } = {}) {
     'dist/desktop-runtime.js': desktopRuntime,
     'dist/swarm-runtime.js': swarmRuntime,
     'dist/main-swarm-hook.js': mainSwarmHook,
+    'dist/passkey-status.js': passkeyRuntime,
   };
 
   if (write) {

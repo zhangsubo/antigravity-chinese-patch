@@ -64,7 +64,9 @@ export function createScanner(translator, options = {}) {
       (/\S/.test(nextText) && /^\s/.test(nextText)) ||
       (/^[A-Z][a-z]+\s+$/.test(current) && node.nextSibling?.tagName === 'STRONG');
     if (inlineConcat && !key.endsWith(':') && !allowedFragments.has(key)) return;
-    const isSecondaryPill = Boolean(node.parentElement?.closest('.rounded-full.bg-secondary'));
+    const isSecondaryPill = Boolean(
+      node.parentElement?.closest('.rounded-full.bg-secondary,[data-testid="customization-new-badge"]')
+    );
     const target = translator.translate(key, { normalized: true, isSecondaryPill });
     if (!target) return;
     const translated = current.replace(/\S[\s\S]*\S|\S/, target);
@@ -238,7 +240,10 @@ export function createScanner(translator, options = {}) {
     for (const el of sidebar.querySelectorAll(
       '[data-testid="conversation-archive-button"],[data-testid="conversation-pin-button"],' +
       '[data-testid="conversation-kebab"],[data-testid="new-coordinator-button"],' +
-      '[data-testid="plugins-visibility-trigger"],[data-testid="sidebar-add-project-button"]'
+      '[data-testid="plugins-visibility-trigger"],[data-testid="sidebar-add-project-button"],' +
+      '[data-testid="customize-sidebar-button"],[data-testid="filter-sort-button"],' +
+      '[data-testid="plugins-nav-more-button"],[data-testid="plugin-sidebar-more-button"],' +
+      '[data-testid="conversation-row-draft"]'
     )) {
       translateAttrs(el);
     }
@@ -256,6 +261,18 @@ export function createScanner(translator, options = {}) {
     }
   }
 
+  function translateDownloadDetailTerm(dt) {
+    if (!dt || dt.firstChild?.nodeType !== 3 || dt.childNodes.length !== 1 || protectedNode(dt.firstChild)) return;
+    const label = permissionDownloadLabels[originalText(dt)];
+    const n = dt.firstChild;
+    const cur = n.nodeValue;
+    if (label && records.get(n)?.translated !== cur) {
+      const tr = cur.replace(/\S[\s\S]*\S|\S/, label);
+      records.set(n, { original: cur, translated: tr });
+      n.nodeValue = tr;
+    }
+  }
+
   function scanChatChromeAndApprovals() {
     for (const el of document.querySelectorAll('[data-testid="project-selector-trigger"]')) {
       if (projectTriggerLabels.has(originalText(el))) translateTree(el);
@@ -266,8 +283,14 @@ export function createScanner(translator, options = {}) {
     for (const el of document.querySelectorAll('p.pointer-events-none')) {
       if (chatInputPlaceholders.has(originalText(el))) translateTree(el);
     }
-    for (const el of document.querySelectorAll('.files-changed-header,[data-testid="cleared-step-notice"]')) {
+    for (const el of document.querySelectorAll(
+      '.files-changed-header,[data-testid="cleared-step-notice"],' +
+      '[data-testid="load-more-status-pill"],[data-testid="suggested-action-row-cloud-env-setup"]'
+    )) {
       translateTree(el);
+    }
+    for (const el of document.querySelectorAll('[data-testid^="suggested-action-dismiss-"]')) {
+      translateAttrs(el);
     }
     for (const el of document.querySelectorAll(
       '[data-testid="interaction-skip-button"],[data-testid="interaction-continue-button"],' +
@@ -319,17 +342,7 @@ export function createScanner(translator, options = {}) {
             if (ed.closest('[tabindex="-1"]') === card) translateAttrs(ed);
           }
           for (const dt of card.querySelectorAll('[data-testid="permission-download-details"] dt')) {
-            if (dt.closest('[tabindex="-1"]') === card && dt.firstChild?.nodeType === 3 &&
-              dt.childNodes.length === 1 && !protectedNode(dt.firstChild)) {
-              const label = permissionDownloadLabels[originalText(dt)];
-              const n = dt.firstChild;
-              const cur = n.nodeValue;
-              if (label && records.get(n)?.translated !== cur) {
-                const tr = cur.replace(/\S[\s\S]*\S|\S/, label);
-                records.set(n, { original: cur, translated: tr });
-                n.nodeValue = tr;
-              }
-            }
+            if (dt.closest('[tabindex="-1"]') === card) translateDownloadDetailTerm(dt);
           }
           for (const span of card.querySelectorAll('span')) {
             if (span.closest('[tabindex="-1"]') === card && span.children.length === 0 &&
@@ -376,12 +389,66 @@ export function createScanner(translator, options = {}) {
         translateAttrs(el);
       }
     }
+    for (const card of document.querySelectorAll('[data-testid="inline-permission-card"]')) {
+      if (protectedNode(card)) continue;
+      for (const el of card.querySelectorAll(
+        '[data-testid="inline-permission-badge"],[data-testid="inline-permission-unsandboxed-warning"],' +
+        '[data-testid="inline-permission-add-note"],[data-testid="inline-permission-in-chat"],' +
+        '[data-testid="inline-permission-deny"],[data-testid="inline-permission-allow"]'
+      )) {
+        translateTree(el);
+      }
+      for (const el of card.querySelectorAll('[data-testid="permission-target-editor"],[role="radiogroup"]')) {
+        translateAttrs(el);
+      }
+      for (const dt of card.querySelectorAll('[data-testid="permission-download-details"] dt')) {
+        translateDownloadDetailTerm(dt);
+      }
+      for (const opt of card.querySelectorAll('[data-testid^="inline-permission-scope-"]')) {
+        const labelSpan = opt.querySelector('span:last-child') || opt;
+        if (permissionOptionSafeTexts.has(originalText(labelSpan))) translateTree(labelSpan, true);
+      }
+      for (const inp of card.querySelectorAll('[data-testid="inline-permission-deny-note"]')) {
+        translatePlaceholder(inp);
+      }
+    }
+    for (const card of document.querySelectorAll('[data-testid="inline-card"]')) {
+      if (protectedNode(card)) continue;
+      for (const el of card.querySelectorAll(
+        '[data-testid="inline-card-add-note"],[data-testid="inline-card-in-chat"],' +
+        '[data-testid="inline-card-skip"],[data-testid="inline-card-next"],' +
+        '[data-testid="inline-card-submit"],[data-testid="inline-card-retry"]'
+      )) {
+        translateTree(el);
+      }
+      for (const inp of card.querySelectorAll('[data-testid="inline-card-approval-note"]')) {
+        translatePlaceholder(inp);
+      }
+      for (const ta of card.querySelectorAll('[data-testid="inline-card-write-in"]')) {
+        translatePlaceholder(ta);
+        translateAttrs(ta);
+      }
+      const stateVal = card.getAttribute('data-inline-card-state');
+      if (stateVal === 'superseded' || stateVal === 'expired') {
+        for (const span of card.querySelectorAll('span')) {
+          if (span.children.length === 0 &&
+            ['Skipped', 'Replaced by newer request', 'Expired · Action not taken'].includes(originalText(span))) {
+            translateTree(span);
+          }
+        }
+      } else if (stateVal === 'answered') {
+        const lead = card.querySelector(':scope > span:first-of-type');
+        if (lead && originalText(lead) === 'Answered:') translateTree(lead);
+      }
+    }
   }
 
   function scanPopupsAndOverview() {
     for (const el of document.querySelectorAll(POPUPS)) {
       translateTree(el);
-      for (const sub of el.querySelectorAll('[data-testid="permissions-override-info-icon"]')) {
+      for (const sub of el.querySelectorAll(
+        '[data-testid="permissions-override-info-icon"],[data-testid="model-selector-effort-info"]'
+      )) {
         translateAttrs(sub);
       }
     }
@@ -518,10 +585,13 @@ export function createScanner(translator, options = {}) {
       }
     }
     for (const el of document.querySelectorAll(
-      '[data-testid="bundles-page"],[data-testid="bundle-detail"],[data-testid="marketplace-bundles-banner"]'
+      '[data-testid="bundles-page"],[data-testid="bundle-detail"],[data-testid="marketplace-bundles-banner"],' +
+      '[data-testid="marketplace-filter-button"],[data-testid="marketplace-filter-menu"],' +
+      '[data-testid="marketplace-ranking-label"],[data-testid="customization-new-badge"]'
     )) {
       translateTree(el);
       for (const attrEl of el.querySelectorAll('[aria-label],[title]')) translateAttrs(attrEl);
+      translateAttrs(el);
       for (const inp of el.querySelectorAll('input[placeholder]')) translatePlaceholder(inp);
     }
     if (location.pathname.startsWith('/customizations')) {
@@ -554,7 +624,8 @@ export function createScanner(translator, options = {}) {
       '[data-testid="create-coordinator-submit"],[data-testid="coordinator-settings-save"],[data-testid="confirm-delete-side-question"],' +
       '[data-testid="browser-site-data-dialog"],[data-testid="browser-clear-data-confirm"],[data-testid="external-link-confirm-modal"],' +
       '[data-testid="plugin-source-caution-modal"],[data-testid="command-hook-warning"],' +
-      '[data-testid="post-onboarding-terms-body"],[data-testid="post-onboarding-welcome-modal"]'
+      '[data-testid="post-onboarding-terms-body"],[data-testid="post-onboarding-welcome-modal"],' +
+      '[data-testid="customize-sidebar-modal"],[data-testid="vcs-commit-message"]'
     )) {
       const dialog = marker.closest('[role="dialog"]');
       if (dialog) {
@@ -569,6 +640,7 @@ export function createScanner(translator, options = {}) {
     for (const el of document.querySelectorAll(
       '[data-testid="selection-quote-button"],[data-testid="selection-btw-button"],' +
       '[data-testid="selection-comment-button"],[data-testid="selection-popup-quote-button"],' +
+      '[data-testid="terminal-selection-popup-quote-button"],[data-testid="terminal-selection-popup-side-question-button"],' +
       '[data-testid="side-panel-pending-terminal-tab"],[data-testid="agent-browser-cross-window-banner"],' +
       '[data-testid="side-question-waiting-status"],[data-testid="side-question-followup-thinking"],' +
       '[data-testid="file-tree-filter-empty"],[data-testid="csv-file-viewer"],' +
@@ -592,7 +664,8 @@ export function createScanner(translator, options = {}) {
       '[data-testid="side-question-insert-to-main"],' +
       '[data-testid="selection-code-search-button"],[data-testid="side-panel-new-tab-button"],' +
       '[data-testid="comment-card-delete"],[data-testid="comment-card-edit"],' +
-      '[data-testid="coordinator-worker-card"] + button,[data-testid="file-tree-filter-clear"],' +
+      '[data-testid="coordinator-worker-card"] + button,[data-testid="coordinator-worker-stop"],' +
+      '[data-testid="file-tree-filter-clear"],' +
       '[data-testid="file-tree-vcs-dot"],[data-testid="csv-filter-clear"],' +
       '[data-testid="lsp-peek-references-close"],[data-testid="url-security-indicator"]'
     )) {

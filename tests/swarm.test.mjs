@@ -54,12 +54,29 @@ const swarmHtml = `
     <div class="o2-doneempty">No tasks completed yet.</div>
     <div id="custom-narrator-lbl" class="o2-team"><div class="o2-h">NarratorCustomTeam</div></div>
     <div id="default-team-lbl" class="o2-team"><div class="o2-h">The team</div></div>
+    <section class="o2-stall" data-testid="swarm-stall-banner">
+      <div class="o2-stmain">
+        <div class="o2-sttop"><b>Swarm stalled — no agents working</b><button class="o2-sttag">@worker #12</button></div>
+        <p class="o2-sttxt">Board</p>
+      </div>
+    </section>
   </div>
 </section>
 <section id="tab-graph">
+  <div class="segmented" role="group" aria-label="Graph view">
+    <button id="gview-hive" title="Threads as cells, with each worker where it works">Hive</button>
+    <button id="gview-mentions" title="Who @mentions whom">Mentions</button>
+  </div>
   <button id="replay-play" title="Play replay"></button>
   <select id="replay-timing"><option value="even">Even pacing</option></select>
+  <button id="graph-export-gif" title="Export graph replay as an animated GIF"><span id="graph-export-gif-label">Export GIF</span></button>
 </section>
+<div id="gif-modal">
+  <div id="gif-modal-title">Board</div>
+  <button id="gif-modal-close" aria-label="Close preview" title="Close"></button>
+  <span class="gif-modal-hint">Right-click image to save, or open in a new tab.</span>
+  <a id="gif-modal-open">Open in new tab</a>
+</div>
 <pre id="raw">Board</pre>
 `;
 
@@ -115,6 +132,17 @@ test('Swarm runtime translates scoped UI controls while protecting names, bodies
   assert.equal(d.querySelector('#custom-narrator-lbl .o2-h').textContent, 'NarratorCustomTeam');
   assert.equal(d.querySelector('#default-team-lbl .o2-h').textContent, '团队');
   assert.equal(d.querySelector('#replay-play').getAttribute('title'), '播放回放');
+  assert.equal(d.querySelector('.o2-sttop > b').textContent, 'Swarm 已停滞 — 当前无成员在工作');
+  assert.equal(d.querySelector('.o2-sttxt').textContent, 'Board');
+  assert.equal(d.querySelector('#tab-graph .segmented').getAttribute('aria-label'), '关系图视图');
+  assert.equal(d.querySelector('#gview-hive').textContent, '蜂巢');
+  assert.equal(d.querySelector('#gview-mentions').textContent, '提及');
+  assert.equal(d.querySelector('#graph-export-gif').getAttribute('title'), '将关系图回放导出为 GIF 动图');
+  assert.equal(d.querySelector('#graph-export-gif-label').textContent, '导出 GIF');
+  assert.equal(d.querySelector('#gif-modal-title').textContent, 'Board');
+  assert.equal(d.querySelector('#gif-modal-close').getAttribute('aria-label'), '关闭预览');
+  assert.equal(d.querySelector('#gif-modal .gif-modal-hint').textContent, '右键点击图片即可保存，也可在新标签页中打开。');
+  assert.equal(d.querySelector('#gif-modal-open').textContent, '在新标签页中打开');
 
   // If a translated node is moved into a protected container, revert it automatically
   const note = d.querySelector('.msg-note');
