@@ -1,5 +1,43 @@
 # 验证记录
 
+## 2026-11-25 · Desktop 2.35.0 / agy-zh 3.0.4（Linux x64 桌面实测通过；macOS / Windows 待主人手工验收）
+
+### 1. 测试环境、包指纹与本地离线门禁
+- **分支 / 工作区**：`compat/antigravity-2.35.0-auto`（等待人工验收合并，未合并 `main`、未推送）。
+- **目标发行版**：官方 **Antigravity Desktop `2.35.0-6394266482769920`**。
+  - 跨平台 `resources/app.asar` SHA-256（Linux / macOS / Windows 三平台逐字节一致）：`99ff7f6cf1219f46c8437df65ca866e384836b5230adba8efd91b3152f823e15`
+  - Linux x64 `Antigravity.tar.gz`：`b88719cbd5f408c0121ee77d2974011a2748306b2591d346eb488a20bc51ec29`；主程序 `antigravity`：`3ba9114b7fbaafaf548f72c5d1bc86b7dc81098a85361784359c2c1199625bfc`（Electron fuses `101100011`）
+  - macOS arm64 `Antigravity.zip`：`150a2ba735e2b1f0fcf220b418a772ff42cc36aebf70cd14e738440b2fec6c0e`；`Antigravity.dmg`：`51105bc2227e41379c42358d01139c6eb9b66d63eee75de10f717208e8f1c672`；`Info.plist` `ElectronAsarIntegrity`：`800b257812bd87a3e4c0e1e719fd097b6a23f405701fb396390c8b9107bfee17`
+  - Windows x64 `Antigravity-x64.exe`：`14289414612ae336933a6963880b3996ab34f47d7d6f4951e0eae1871694050e`；解包 `Antigravity.exe`：`422531806d9a2f773b27d789dfe46c5411c1a58ab0f4dbd0462abdece8f4761a`（Electron fuses `101100011`）
+  - `dist/preload.js` SHA-256：`2973a6bfd3154fd20c58cbb6643dbf0a5e0cc4fd8a5894c4496f3db5c6231475`；`dist/main.js` SHA-256：`e4dd0d71d96f7fdcb5af5b86395cebac8d2367812604fa331429570a442fed69`；`dist/tray.js` SHA-256：`6c6b0968b45a1c7088e459657d57a9efd72d3733614349095f17b6ee94b47135`
+- **产物与离线测试**（`node tools/build-payloads.mjs` / `npm test` / `npm run build`）：
+  - 主词库：**2,335** 条精确词条 + **64** 条动态规则；Swarm 词库：**156** 条专用精确词条 + **11** 条规则；`bundleFingerprint: "3.0.4-84cf01564c3e"`；内置 `payload_sha256`：`2cac6db30f553811e62bfe23078a743b3d78f29329fbe16e71375355b7190ab2`。
+  - **JS DOM / Swarm / 漂移测试**：**42 / 42** 通过；**Rust 单测 (`cargo test`)**：**24 / 24** 通过（涵盖 3 平台 `is_native_ui_tested` 断言与 2.35.0 版本）。
+  - **漂移检测 (`tools/drift-detector.mjs`)**：扫描 2.35.0 `app.asar`（`176` 文件 / `553` 候选 / `16` 命中 / `falsePositiveCount: 0`）与内嵌 Web UI `main.js`（`12,798,818` bytes / `7,755` 候选 / `1,174` 精确 + `1` 规则命中 / `falsePositiveCount: 0`）。
+  - **三平台解包 `agy-zh doctor --app ...`**：Linux（`native_ui_tested: true`）、macOS（`native_ui_tested: false`）、Windows（`native_ui_tested: false`）均报告 `version: "2.35.0"`、`compatibility_mode: "verified"`、`main_swarm_hook: true` 与 `12 core + 12 optional = 24` 锚点命中。
+
+### 2. Linux x64 真实桌面实测结果（Instabox `box-856891` · Debian 13 x86_64 · XFCE · `DISPLAY=:1`）
+- **远程构建与单测**：在 `box-856891` 上同步补丁源码至 `/data/workspace/agy-login-2.32.2.g1d3Bn/patch`，执行 `npm test`（42 JS + 24 Rust 全通过，退出码 `0`）与 `npm run build`（`agy-zh 3.0.4`，退出码 `0`）。
+- **静态补丁全生命周期**（`/opt/Antigravity`，独立临时配置 `/tmp/ag-2.35.0-static-profile`，证据位于远程 `/data/workspace/agy-login-2.32.2.g1d3Bn/evidence-2.35.0/`）：
+  1. `agy-zh doctor`（安装前，免 `--app` 自动识别 `/opt/Antigravity`）：退出码 `0`，`version: "2.35.0"`，`patched: false`，`native_ui_tested: true`。
+  2. 非 root `./target/release/agy-zh install`：退出码 `1`（触发权限拦截 `Insufficient permissions to modify /opt`）。
+  3. `sudo ./target/release/agy-zh install`：退出码 `0`，`patched: true`，补丁后 `app.asar` SHA-256 `ea241b46acc055cb1f6edff4b9bf4b74a9440f91bc3a6f78c2584cd03ae5bb91`，生成备份 `/opt/Antigravity.zh-cn-original` 与 `.zh-cn-state.json`；安装后 `doctor` 退出码 `0`。
+  4. 在 `DISPLAY=:1` 启动 `/opt/Antigravity/antigravity`（端口 `41235`，`xwininfo` 确认 `Antigravity` X11 窗口 `933x649`）：初始中文 UI（悬浮球 `中文 · 开`、顶栏 `工作区 / 视图 / 窗口`、侧栏、条款弹窗 `开始使用前的最后一步…`）均正常汉化；点击悬浮球切换至英文（`中文 · 关`）恢复原文；再次点击切回中文（`中文 · 开`）。
+  5. 运行态保护检查：`sudo ./target/release/agy-zh restore`（进程未退出时）：退出码 `1`（阻止运行态还原）。
+  6. 彻底退出并重启 `/opt/Antigravity/antigravity`：重启后默认保持中文激活（`中文 · 开`，顶栏/侧栏/条款弹窗均直接中文）。
+  7. 彻底退出并执行 `sudo ./target/release/agy-zh restore`：退出码 `0`，`/opt/Antigravity/resources/app.asar` 校验恢复原版 SHA-256 `99ff7f6cf1219f46c8437df65ca866e384836b5230adba8efd91b3152f823e15`，备份与状态文件已清理，还原后 `doctor` 退出码 `0`（`patched: false`），并删除 `/tmp/ag-2.35.0-static-profile`。
+- **动态 CDP 模式**（`/data/workspace/agy-login-2.32.2.g1d3Bn/Antigravity-x64`，保护并复用既有已登录 `--user-data-dir=/data/workspace/agy-login-2.32.2.g1d3Bn/profile`，端口 `41171`）：
+  1. 启动 `2.35.0` 后执行 `agy-zh run --app ... --port 41171`（退出码 `0`）与 `agy-zh doctor --app ...`（退出码 `0`，`patched: false`，`cdp_daemon_running: true`，`cdp_endpoint_reachable: true`）。
+  2. 验证已登录主界面中文（顶栏 `工作区 / 视图 / 窗口`、侧栏 `新建对话 / 自动化 / 自定义配置 / 项目 / 设置`、`欢迎回来，张璋，我们从哪里继续？`、`Gemini 4 Neon 高`、`中文 · 开`）、点击切换英文（`中文 · 关`）与切回中文（`中文 · 开`）、`设置 -> 通用` 与 `设置 -> 应用`（核验 `防止休眠 / 保留在菜单栏 / 通知设置` 及 `应用版本 2.35.0`），以及内置 Swarm 面板 iframe（`plugin://swarm--swarm_board-37707/`：`3.0.4-906ef8b16e9a`，`概览 / 看板 / 成员 / 关系图 / 原始数据`、`蜂巢 / 提及 / 导出 GIF / 在新标签页中打开` 随主窗口开关同步中英文切换）。
+  3. 执行 `agy-zh stop`（退出码 `0`，`doctor` 确认 `cdp_daemon_running: false`）与再次 `agy-zh run --app ... --port 41171`（退出码 `0`，`doctor` 退出码 `0`），最终 `/opt/Antigravity/resources/app.asar` 与 `/data/workspace/agy-login-2.32.2.g1d3Bn/Antigravity-x64/resources/app.asar` 均保持原版 SHA-256 `99ff7f6cf1219f46c8437df65ca866e384836b5230adba8efd91b3152f823e15`。
+- **关键远程证据路径**（`box-856891:/data/workspace/agy-login-2.32.2.g1d3Bn/evidence-2.35.0/`）：
+  - 日志：`npm-ci-2.35.0.log`、`tests-2.35.0.log`、`build-2.35.0.log`、`static-install.log`、`static-app.log`、`static-toggle-and-guard.log`、`static-app-restart.log`、`static-restart-and-restore.log`、`dynamic-sha256-before.txt`、`dynamic-app.log`、`dynamic-run.log`、`dynamic-ui-verify.log`、`dynamic-ui-verify-2.log`、`dynamic-stop-rerun.log`
+  - 截图：`linux-2.35.0-static-zh-1.png`、`linux-2.35.0-static-en.png`、`linux-2.35.0-static-zh-2.png`、`linux-2.35.0-static-restart-zh.png`、`linux-2.35.0-dynamic-main-zh.png`、`linux-2.35.0-dynamic-main-en.png`、`linux-2.35.0-dynamic-settings-general-zh.png`、`linux-2.35.0-dynamic-settings-app-zh.png`、`linux-2.35.0-dynamic-final-zh.png`（已拉取并在本地目视检查关键 PNG，渲染清晰无排版破损）。
+
+### 3. macOS 与 Windows 平台状态（待主人手工测试验收）
+- **macOS**：已完成官方 `2.35.0` 包指纹与离线 `agy-zh doctor` 校验；**未进行真机桌面实测**，`native_ui_tested_platforms` 不包含 `darwin`（`native_ui_tested: false`），待主人手工测试验收。
+- **Windows**：已完成官方 `2.35.0` 包指纹与离线 `agy-zh doctor` 校验；**未进行真机桌面实测**，`native_ui_tested_platforms` 不包含 `win32`（`native_ui_tested: false`），待主人手工测试验收。
+
 ## 2026-11-22 · macOS arm64 · 2.34.0 Passkey 连接提示修复
 
 - 使用该版本的 Electron、官方窗口创建函数和 HTML 模板，以测试用二维码打开独立窗口。动态模式通过实际 CDP 守护接入。静态模式从已安装补丁的 ASAR 提取窗口函数和主进程钩子，验证后还原副本。

@@ -1947,3 +1947,208 @@ test('v3.0.3 translates 2.34.0 sidebar customization, orchestrator picker, inlin
  w.__antigravity_chinese_patch__.dispose();
  dom.window.close();
 });
+
+test('v3.0.4 translates 2.35.0 custom window controls, sidebar menu, inline cards, dictation languages, plugin permissions, and move dialog while protecting user data', () => {
+ const body = `
+  <button data-testid="app-logo-menu-trigger" aria-label="Application Menu"></button>
+  <div role="menu" data-testid="app-logo-menu">
+   <button>Zoom In</button>
+   <span>Version 2.35.0</span>
+   <button>Check for Updates</button>
+  </div>
+  <div data-testid="custom-window-controls">
+   <button data-testid="window-control-minimize" aria-label="Minimize" title="Minimize"></button>
+   <button data-testid="window-control-maximize" aria-label="Maximize" title="Maximize"></button>
+   <button data-testid="window-control-close" aria-label="Close" title="Close"></button>
+  </div>
+  <aside aria-label="Sidebar">
+   <button data-testid="coordinators-more-button" aria-label="Coordinators Options"></button>
+   <button data-testid="conversation-resolve-button" aria-label="Resolve conversation"></button>
+   <span data-testid="sidebar-wsl-label">WSL: Ubuntu</span>
+  </aside>
+  <div role="menu" data-testid="customize-sidebar-menu">
+   <button data-testid="customize-inbox-mode" aria-label="Inbox Mode">Inbox Mode</button>
+   <button data-testid="customize-auto-resolve"><span>Auto-Resolve</span><span>3 days</span></button>
+   <button data-testid="customize-advanced-trigger"><span>Advanced</span></button>
+   <button data-testid="customize-filter-scheduled">Show Automations</button>
+   <button data-testid="customize-filter-plugins">Show Plugins</button>
+  </div>
+  <div role="menu" data-testid="new-agent-menu">
+   <button data-testid="new-agent-personal-option"><span>For Me</span><span>Personal agent running as you</span></button>
+   <button data-testid="new-agent-team-option"><span>For My Team</span><span>Shared agent for your team</span></button>
+  </div>
+  <div data-testid="coordinator-hover-card">
+   <div data-testid="coordinator-hover-card-title">Settings</div>
+   <p data-testid="coordinator-hover-card-description">General</p>
+   <ul>
+    <li data-testid="coordinator-hover-card-count"><span>2</span> <span>ready</span></li>
+    <li data-testid="coordinator-hover-card-count"><span>1</span> <span>running</span></li>
+   </ul>
+  </div>
+  <div data-testid="sidebar-agent-hover-card">
+   <div data-testid="sidebar-agent-hover-card-title">Settings</div>
+   <p data-testid="sidebar-agent-hover-card-description">General</p>
+   <div data-testid="sidebar-agent-hover-card-status">
+    <span>Needs attention</span>
+    <span>2 waiting</span>
+    <span>alice@example.com</span>
+   </div>
+  </div>
+  <div role="menu">
+   <div data-testid="coordinators-show-item">Settings</div>
+  </div>
+  <div data-testid="inline-permission-card">
+   <span data-testid="inline-permission-badge"><span>Permission</span></span>
+   <div data-testid="permission-trigger-command">Command: <span class="font-mono">rm -rf /tmp/Settings</span></div>
+   <div role="radiogroup" aria-label="Permission decision">
+    <button data-testid="inline-permission-scope-task"><span>1</span><span id="ips-task">Yes, allow for this task</span></button>
+    <button data-testid="inline-permission-scope-proj"><span>2</span><span id="ips-proj">Yes, always allow in this project</span></button>
+   </div>
+   <button data-testid="inline-permission-deny">Deny</button>
+  </div>
+  <div data-testid="plugin-grant-card">
+   <span>DemoPlugin can now read workspace files</span>
+   <span class="text-xs" id="pgc-scope">Allowed in this conversation</span>
+   <button>Manage permissions</button>
+  </div>
+  <div data-testid="inline-card" data-inline-card-state="answered">
+   <span data-testid="inline-card-settled-label">Answered in chat</span>
+   <div data-testid="inline-card-freeform-answer">Settings</div>
+   <input data-testid="inline-card-freeform-input" placeholder="Type your own answer" aria-label="Type your own answer">
+   <button data-testid="inline-card-freeform-submit">Submit</button>
+  </div>
+  <section aria-label="Settings">
+   <h1>Settings</h1>
+   <nav><button>General</button><button>Application</button><button>Appearance</button></nav>
+   <article>
+    <h2>General</h2>
+    <div data-testid="voice-settings-dictation-languages">
+     <span>Dictation languages</span>
+     <span>New</span>
+     <span>Constrain voice dictation to selected languages in priority order. Leave empty to auto-detect.</span>
+     <button data-testid="dictation-languages-reset">Reset to auto</button>
+     <span data-testid="dictation-language-pill-en">English</span>
+    </div>
+    <h2>Plugin permissions</h2>
+    <section data-testid="plugin-permissions-allowed">
+     <div>Allowed by you</div>
+     <div data-testid="plugin-permission-row">
+      <span data-testid="plugin-permission-name">Settings</span>
+      <span>Allowed in DemoProject</span>
+     </div>
+    </section>
+    <section data-testid="plugin-permissions-included">
+     <div>Included with plugin</div>
+     <div data-testid="plugin-permission-default-row">Settings: read</div>
+    </section>
+   </article>
+  </section>
+  <div role="group" aria-label="Dictation language options" data-testid="dictation-languages-popover">
+   <div role="listbox" aria-label="Available dictation languages">
+    <div data-testid="dictation-language-option-en">English</div>
+    <div>No matching languages for "xyz"</div>
+   </div>
+   <span>Click items to multi-select · Drag or ‹/› pills to reorder</span>
+   <button data-testid="dictation-languages-done">Done</button>
+  </div>
+  <div role="dialog" id="move-dlg">
+   <h2>Move Conversation</h2>
+   <div>
+    <p>Move this conversation to "DemoProject"?</p>
+    <div>
+     <button data-testid="cancel-move-conversation-project">Cancel</button>
+     <button data-testid="confirm-move-conversation-project">Move</button>
+    </div>
+   </div>
+  </div>
+  <div role="dialog">
+   <h2>Revoke all: DemoPlugin</h2>
+   <div data-testid="plugin-permission-revoke-all-modal">
+    <div>All 3 will be revoked. The plugin will ask before doing this again.</div>
+    <button data-testid="confirm-revoke-all">Revoke all</button>
+   </div>
+  </div>
+  <div data-testid="load-older-messages-button">Load older messages</div>
+  <div data-testid="load-newer-status">Loading newer messages…</div>
+  <div data-testid="hidden-slice-loading">Loading messages…</div>
+  <div data-testid="queued-messages-card">
+   <span>Queued Messages</span>
+   <span data-testid="queued-messages-status" title="Sends after agent finishes working">Sends after agent finishes working</span>
+   <button data-testid="queued-messages-expand-button" aria-label="Expand queued messages"></button>
+   <div data-queued-msg-id="q1">Settings</div>
+  </div>
+  <button data-testid="plugin-theme-apply" aria-label="Applied DemoTheme">Applied</button>
+  <span data-testid="plugin-detail-added-badge">Added</span>
+  <div data-testid="orchestrator-picker-default">Default (Gemini Pro)</div>
+ `;
+ const dom = create(body);
+ const w = dom.window;
+ const d = w.document;
+ assert.equal(d.querySelector('[data-testid="app-logo-menu-trigger"]').getAttribute('aria-label'), '应用菜单');
+ assert.equal(d.querySelector('[data-testid="app-logo-menu"] span').textContent, '版本 2.35.0');
+ assert.equal(d.querySelector('[data-testid="window-control-minimize"]').getAttribute('aria-label'), '最小化');
+ assert.equal(d.querySelector('[data-testid="window-control-maximize"]').getAttribute('title'), '最大化');
+ assert.equal(d.querySelector('[data-testid="window-control-close"]').getAttribute('aria-label'), '关闭');
+ assert.equal(d.querySelector('[data-testid="coordinators-more-button"]').getAttribute('aria-label'), '协调器选项');
+ assert.equal(d.querySelector('[data-testid="conversation-resolve-button"]').getAttribute('aria-label'), '解决对话');
+ assert.equal(d.querySelector('[data-testid="sidebar-wsl-label"]').textContent, 'WSL: Ubuntu');
+ assert.equal(d.querySelector('[data-testid="customize-inbox-mode"]').textContent, '收件箱模式');
+ assert.equal(d.querySelector('[data-testid="customize-auto-resolve"] > span:first-child').textContent, '自动解决');
+ assert.equal(d.querySelector('[data-testid="customize-auto-resolve"] > span:last-child').textContent, '3 天');
+ assert.equal(d.querySelector('[data-testid="customize-filter-scheduled"]').textContent, '显示自动化');
+ assert.equal(d.querySelector('[data-testid="customize-filter-plugins"]').textContent, '显示插件');
+ assert.equal(d.querySelector('[data-testid="new-agent-personal-option"] > span:first-child').textContent, '个人使用');
+ assert.equal(d.querySelector('[data-testid="new-agent-team-option"] > span:first-child').textContent, '团队共享');
+ assert.equal(d.querySelector('[data-testid="coordinator-hover-card-title"]').textContent, 'Settings');
+ assert.equal(d.querySelector('[data-testid="coordinator-hover-card-description"]').textContent, 'General');
+ assert.equal(d.querySelector('[data-testid="coordinator-hover-card-count"]:first-child > span:last-child').textContent, '已就绪');
+ assert.equal(d.querySelector('[data-testid="coordinator-hover-card-count"]:last-child > span:last-child').textContent, '运行中');
+ assert.equal(d.querySelector('[data-testid="sidebar-agent-hover-card-title"]').textContent, 'Settings');
+ assert.equal(d.querySelector('[data-testid="sidebar-agent-hover-card-status"] > span:first-child').textContent, '需要处理');
+ assert.equal(d.querySelector('[data-testid="sidebar-agent-hover-card-status"] > span:nth-child(2)').textContent, '2 项待处理');
+ assert.equal(d.querySelector('[data-testid="sidebar-agent-hover-card-status"] > span:last-child').textContent, 'alice@example.com');
+ assert.equal(d.querySelector('[data-testid="coordinators-show-item"]').textContent, 'Settings');
+ assert.equal(d.querySelector('[data-testid="inline-permission-badge"]').textContent, '权限');
+ assert.equal(d.querySelector('[data-testid="permission-trigger-command"]').textContent, '命令： rm -rf /tmp/Settings');
+ assert.equal(d.querySelector('#ips-task').textContent, '是，仅在本次任务中允许');
+ assert.equal(d.querySelector('#ips-proj').textContent, '是，在此项目中始终允许');
+ assert.equal(d.querySelector('#pgc-scope').textContent, '在当前对话中已允许');
+ assert.equal(d.querySelector('[data-testid="plugin-grant-card"] button').textContent, '管理权限');
+ assert.equal(d.querySelector('[data-testid="inline-card-settled-label"]').textContent, '已在对话中回复');
+ assert.equal(d.querySelector('[data-testid="inline-card-freeform-answer"]').textContent, 'Settings');
+ assert.equal(d.querySelector('[data-testid="inline-card-freeform-input"]').getAttribute('placeholder'), '输入你自己的回答');
+ assert.equal(d.querySelector('[data-testid="inline-card-freeform-submit"]').textContent, '提交');
+ assert.equal(d.querySelector('[data-testid="dictation-languages-reset"]').textContent, '重置为自动检测');
+ assert.equal(d.querySelector('[data-testid="dictation-language-pill-en"]').textContent, 'English');
+ assert.equal(d.querySelector('[data-testid="dictation-language-option-en"]').textContent, 'English');
+ assert.equal(d.querySelector('[data-testid="dictation-languages-popover"]').getAttribute('aria-label'), '听写语言选项');
+ assert.equal(d.querySelector('[data-testid="dictation-languages-done"]').textContent, '完成');
+ assert.equal(d.querySelector('[data-testid="plugin-permission-name"]').textContent, 'Settings');
+ assert.equal(d.querySelector('[data-testid="plugin-permission-row"] > span:last-child').textContent, '已在 DemoProject 中允许');
+ assert.equal(d.querySelector('[data-testid="plugin-permission-default-row"]').textContent, 'Settings: read');
+ assert.equal(d.querySelector('#move-dlg h2').textContent, '移动对话');
+ assert.equal(d.querySelector('#move-dlg p').textContent, '要将此对话移至“DemoProject”吗？');
+ assert.equal(d.querySelector('[data-testid="confirm-move-conversation-project"]').textContent, '移动');
+ assert.equal(d.querySelector('[data-testid="plugin-permission-revoke-all-modal"]').parentElement.querySelector('h2').textContent, '全部撤销：DemoPlugin');
+ assert.equal(d.querySelector('[data-testid="confirm-revoke-all"]').textContent, '全部撤销');
+ assert.equal(d.querySelector('[data-testid="load-older-messages-button"]').textContent, '加载更早的消息');
+ assert.equal(d.querySelector('[data-testid="load-newer-status"]').textContent, '正在加载更新消息…');
+ assert.equal(d.querySelector('[data-testid="hidden-slice-loading"]').textContent, '正在加载消息…');
+ assert.equal(d.querySelector('[data-testid="queued-messages-card"] > span').textContent, '排队消息');
+ assert.equal(d.querySelector('[data-testid="queued-messages-status"]').textContent, '将在智能体完成工作后发送');
+ assert.equal(d.querySelector('[data-testid="queued-messages-expand-button"]').getAttribute('aria-label'), '展开排队消息');
+ assert.equal(d.querySelector('[data-queued-msg-id="q1"]').textContent, 'Settings');
+ assert.equal(d.querySelector('[data-testid="plugin-theme-apply"]').textContent, '已应用');
+ assert.equal(d.querySelector('[data-testid="plugin-detail-added-badge"]').textContent, '已添加');
+ assert.equal(d.querySelector('[data-testid="orchestrator-picker-default"]').textContent, '默认 (Gemini Pro)');
+
+ w.__antigravity_chinese_patch__.setEnabled(false);
+ assert.equal(d.querySelector('[data-testid="window-control-minimize"]').getAttribute('aria-label'), 'Minimize');
+ assert.equal(d.querySelector('[data-testid="customize-inbox-mode"]').textContent, 'Inbox Mode');
+ assert.equal(d.querySelector('[data-testid="coordinator-hover-card-count"]:first-child > span:last-child').textContent, 'ready');
+ assert.equal(d.querySelector('#ips-task').textContent, 'Yes, allow for this task');
+ assert.equal(d.querySelector('[data-testid="inline-card-settled-label"]').textContent, 'Answered in chat');
+ assert.equal(d.querySelector('[data-testid="load-older-messages-button"]').textContent, 'Load older messages');
+ w.__antigravity_chinese_patch__.dispose();
+ dom.window.close();
+});

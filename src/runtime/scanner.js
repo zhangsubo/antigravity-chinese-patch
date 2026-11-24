@@ -239,7 +239,8 @@ export function createScanner(translator, options = {}) {
     }
     for (const el of sidebar.querySelectorAll(
       '[data-testid="conversation-archive-button"],[data-testid="conversation-pin-button"],' +
-      '[data-testid="conversation-kebab"],[data-testid="new-coordinator-button"],' +
+      '[data-testid="conversation-resolve-button"],[data-testid="conversation-kebab"],' +
+      '[data-testid="new-coordinator-button"],[data-testid="coordinators-more-button"],' +
       '[data-testid="plugins-visibility-trigger"],[data-testid="sidebar-add-project-button"],' +
       '[data-testid="customize-sidebar-button"],[data-testid="filter-sort-button"],' +
       '[data-testid="plugins-nav-more-button"],[data-testid="plugin-sidebar-more-button"],' +
@@ -285,9 +286,22 @@ export function createScanner(translator, options = {}) {
     }
     for (const el of document.querySelectorAll(
       '.files-changed-header,[data-testid="cleared-step-notice"],' +
-      '[data-testid="load-more-status-pill"],[data-testid="suggested-action-row-cloud-env-setup"]'
+      '[data-testid="load-more-status-pill"],[data-testid="suggested-action-row-cloud-env-setup"],' +
+      '[data-testid="load-older-messages-button"],[data-testid="load-newer-status"],[data-testid="hidden-slice-loading"]'
     )) {
       translateTree(el);
+    }
+    for (const card of document.querySelectorAll('[data-testid="queued-messages-card"]')) {
+      for (const span of card.querySelectorAll('span')) {
+        if (span.children.length === 0 && originalText(span) === 'Queued Messages') translateTree(span);
+      }
+      for (const st of card.querySelectorAll('[data-testid="queued-messages-status"]')) {
+        translateTree(st);
+        translateAttrs(st);
+      }
+      for (const btn of card.querySelectorAll('[data-testid="queued-messages-expand-button"]')) {
+        translateAttrs(btn);
+      }
     }
     for (const el of document.querySelectorAll('[data-testid^="suggested-action-dismiss-"]')) {
       translateAttrs(el);
@@ -394,7 +408,8 @@ export function createScanner(translator, options = {}) {
       for (const el of card.querySelectorAll(
         '[data-testid="inline-permission-badge"],[data-testid="inline-permission-unsandboxed-warning"],' +
         '[data-testid="inline-permission-add-note"],[data-testid="inline-permission-in-chat"],' +
-        '[data-testid="inline-permission-deny"],[data-testid="inline-permission-allow"]'
+        '[data-testid="inline-permission-deny"],[data-testid="inline-permission-allow"],' +
+        '[data-testid="permission-trigger-command"]'
       )) {
         translateTree(el);
       }
@@ -405,11 +420,30 @@ export function createScanner(translator, options = {}) {
         translateDownloadDetailTerm(dt);
       }
       for (const opt of card.querySelectorAll('[data-testid^="inline-permission-scope-"]')) {
-        const labelSpan = opt.querySelector('span:last-child') || opt;
-        if (permissionOptionSafeTexts.has(originalText(labelSpan))) translateTree(labelSpan, true);
+        const spans = [...opt.querySelectorAll('span')].filter(
+          (s) => s.children.length === 0 && permissionOptionSafeTexts.has(originalText(s))
+        );
+        if (spans.length > 0) {
+          for (const s of spans) translateTree(s, true);
+        } else {
+          const labelSpan = opt.querySelector('span:last-child') || opt;
+          if (permissionOptionSafeTexts.has(originalText(labelSpan))) translateTree(labelSpan, true);
+        }
       }
       for (const inp of card.querySelectorAll('[data-testid="inline-permission-deny-note"]')) {
         translatePlaceholder(inp);
+      }
+    }
+    for (const card of document.querySelectorAll('[data-testid="plugin-grant-card"]')) {
+      if (protectedNode(card)) continue;
+      for (const btn of card.querySelectorAll('button')) {
+        if (originalText(btn) === 'Manage permissions') translateTree(btn);
+      }
+      for (const span of card.querySelectorAll('span.text-xs')) {
+        const txt = originalText(span);
+        if (txt === 'Allowed in this conversation' || txt === 'Always allowed in this project' || txt === 'Always allowed') {
+          translateTree(span);
+        }
       }
     }
     for (const card of document.querySelectorAll('[data-testid="inline-card"]')) {
@@ -417,12 +451,14 @@ export function createScanner(translator, options = {}) {
       for (const el of card.querySelectorAll(
         '[data-testid="inline-card-add-note"],[data-testid="inline-card-in-chat"],' +
         '[data-testid="inline-card-skip"],[data-testid="inline-card-next"],' +
-        '[data-testid="inline-card-submit"],[data-testid="inline-card-retry"]'
+        '[data-testid="inline-card-submit"],[data-testid="inline-card-retry"],' +
+        '[data-testid="inline-card-settled-label"],[data-testid="inline-card-freeform-submit"]'
       )) {
         translateTree(el);
       }
-      for (const inp of card.querySelectorAll('[data-testid="inline-card-approval-note"]')) {
+      for (const inp of card.querySelectorAll('[data-testid="inline-card-approval-note"],[data-testid="inline-card-freeform-input"]')) {
         translatePlaceholder(inp);
+        translateAttrs(inp);
       }
       for (const ta of card.querySelectorAll('[data-testid="inline-card-write-in"]')) {
         translatePlaceholder(ta);
@@ -625,9 +661,11 @@ export function createScanner(translator, options = {}) {
       '[data-testid="browser-site-data-dialog"],[data-testid="browser-clear-data-confirm"],[data-testid="external-link-confirm-modal"],' +
       '[data-testid="plugin-source-caution-modal"],[data-testid="command-hook-warning"],' +
       '[data-testid="post-onboarding-terms-body"],[data-testid="post-onboarding-welcome-modal"],' +
-      '[data-testid="customize-sidebar-modal"],[data-testid="vcs-commit-message"]'
+      '[data-testid="customize-sidebar-modal"],[data-testid="vcs-commit-message"],' +
+      '[data-testid="confirm-move-conversation-project"],[data-testid="plugin-permission-revoke-all-modal"],' +
+      '[data-testid="dictation-languages-popover"]'
     )) {
-      const dialog = marker.closest('[role="dialog"]');
+      const dialog = marker.closest('[role="dialog"],[role="group"]');
       if (dialog) {
         translateTree(dialog);
         for (const el of dialog.querySelectorAll('[aria-label],[title]')) {
@@ -635,7 +673,16 @@ export function createScanner(translator, options = {}) {
             translateAttrs(el);
           }
         }
+        translateAttrs(dialog);
       }
+    }
+    for (const el of document.querySelectorAll(
+      '[data-testid="plugin-permissions-allowed"],[data-testid="plugin-permissions-included"],' +
+      '[data-testid="plugin-theme-apply"],[data-testid="plugin-detail-added-badge"]'
+    )) {
+      translateTree(el);
+      for (const sub of el.querySelectorAll('[aria-label],[title]')) translateAttrs(sub);
+      translateAttrs(el);
     }
     for (const el of document.querySelectorAll(
       '[data-testid="selection-quote-button"],[data-testid="selection-btw-button"],' +
@@ -769,9 +816,31 @@ export function createScanner(translator, options = {}) {
     }
     for (const el of document.querySelectorAll(
       '[data-testid="ssh-host-label"],[data-testid="file-tree-filter-error"],' +
-      '[data-testid="onboarding-switch-to-auth-code"],[data-testid="home-greeting"]'
+      '[data-testid="onboarding-switch-to-auth-code"],[data-testid="home-greeting"],' +
+      '[data-testid="orchestrator-picker-default"]'
     )) {
       translateTree(el);
+    }
+    for (const el of document.querySelectorAll(
+      '[data-testid="app-logo-menu-trigger"],[data-testid="custom-window-controls"] button,' +
+      '[data-testid="window-control-minimize"],[data-testid="window-control-maximize"],[data-testid="window-control-close"]'
+    )) {
+      translateAttrs(el);
+    }
+    const coordHoverLabels = { blocked: '已阻塞', ready: '已就绪', running: '运行中', failed: '已失败' };
+    for (const el of document.querySelectorAll('[data-testid="coordinator-hover-card-count"] > span:last-child')) {
+      const node = el.firstChild;
+      if (node?.nodeType === 3 && !node.nextSibling && !protectedNode(node)) {
+        const label = coordHoverLabels[originalText(el)];
+        if (label) setRecordedText(node, label);
+      }
+    }
+    for (const card of document.querySelectorAll('[data-testid="sidebar-agent-hover-card"]')) {
+      const status = card.querySelector('[data-testid="sidebar-agent-hover-card-status"] > span:first-child');
+      if (status) translateTree(status);
+      for (const sp of card.querySelectorAll('[data-testid="sidebar-agent-hover-card-status"] > span')) {
+        if (sp.children.length === 0 && /^\d+\s+waiting$/.test(originalText(sp))) translateTree(sp);
+      }
     }
   }
 

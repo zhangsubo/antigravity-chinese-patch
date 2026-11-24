@@ -1,5 +1,14 @@
 # 更新日志
 
+## [3.0.4] - 2026-11-25
+
+- 新增 Antigravity Desktop **2.35.0**（Build `2.35.0-6394266482769920`）三平台精确指纹（`dist/preload.js`、`dist/main.js`、`dist/tray.js`、`dist/cablev2.js`、`dist/menu.js`、`dist/updater.js` 共 24 条规则）。
+- 适配 Desktop 2.35.0 新增界面与边界保护（主界面精确词条增至 **2,335 条**，动态规则增至 **64 条**；Swarm 面板增至 **156 条**精确词条 + **11 条**规则）：
+  - 自定义窗口控件与左上角应用图标菜单（`custom-window-controls`、`app-logo-menu`）、侧边栏收件箱模式与自定义菜单（`customize-sidebar-menu`、`Inbox Mode`、`Auto-Resolve`、`Working Section`、`Resolve conversation`、`Move Conversation`）、新建个人/团队智能体菜单（`new-agent-menu`）及悬浮卡片状态标签（保护标题、描述与邮箱）；
+  - 新版内联权限/问答卡片（`inline-permission-card` 的 `Yes, allow for this task` / `Yes, always allow in this project` 与 `permission-trigger-command`、保护命令文本；`inline-card` 的已处理标签与自由回答输入框）、插件权限设置与撤销弹窗（`plugin-permissions-*`、`plugin-grant-card`）、语音听写语言多选设置（`voice-settings-dictation-languages`，保护语言原名）以及消息加载与排队发送状态栏；
+  - 补充 2.35.0 设置项（如 `Prevent sleep`、`Keep in menu bar`、`Notification settings` 等 sentence-case 标签）与 Swarm「加载更早消息」动态提示（`swarm-load-earlier`）。
+- Linux x64 已在 Instabox `box-856891`（Debian 13 x86_64 + XFCE `DISPLAY=:1`）完成 `2.35.0` 静态补丁全生命周期（`doctor` / 非特权拦截 / `install` / 实机切换 / 运行期还原拦截 / 重启保持中文 / `restore` 无损还原）与 `agy-zh run` 动态守护模式（含主界面、设置中心、Swarm 子帧中英同步）真实桌面实测；macOS 与 Windows 已核验 2.35.0 官方包指纹，真机桌面待手工测试验收。
+
 ## [3.0.3] - 2026-11-22
 
 - 新增 Antigravity Desktop **2.33.1** 和 **2.34.0** 精确指纹。两个版本均已在 macOS arm64 和 Linux x64 验证静态安装、还原及动态汉化。Windows x64 已核验发行包指纹，桌面实测待完成。

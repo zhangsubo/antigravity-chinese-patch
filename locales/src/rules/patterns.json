@@ -346,5 +346,41 @@
     "regex": "^(\\d+) agents? working, live preview unavailable$",
     "flags": "",
     "replacement": "$1 个智能体正在工作，实时预览不可用"
+  },
+  {
+    "id": "move-conversation-to-project",
+    "regex": "^Move this conversation to \"([\\s\\S]+)\"\\?$",
+    "flags": "",
+    "replacement": "要将此对话移至“$1”吗？"
+  },
+  {
+    "id": "revoke-all-plugin-permissions",
+    "regex": "^Revoke all: (.+)$",
+    "flags": "",
+    "replacement": "全部撤销：$1"
+  },
+  {
+    "id": "all-grants-will-be-revoked",
+    "regex": "^All (\\d+) will be revoked\\. The plugin will ask before doing this again\\.$",
+    "flags": "",
+    "replacement": "将撤销全部 $1 项权限。之后此插件在执行相关操作前会重新向你询问。"
+  },
+  {
+    "id": "allowed-in-project-name",
+    "regex": "^Allowed in (.+)$",
+    "flags": "",
+    "replacement": "已在 $1 中允许"
+  },
+  {
+    "id": "no-matching-languages-for",
+    "regex": "^No matching languages for \"([\\s\\S]+)\"$",
+    "flags": "",
+    "replacement": "未找到与“$1”匹配的语言"
+  },
+  {
+    "id": "agent-hover-waiting-count",
+    "regex": "^(\\d+) waiting$",
+    "flags": "",
+    "replacement": "$1 项待处理"
   }
 ]

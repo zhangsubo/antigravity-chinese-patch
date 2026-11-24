@@ -34,7 +34,15 @@ export const SKIP =
   '[data-testid="plugins-nav-show-item"],[data-testid="orchestrator-picker-row"] > span:first-child,' +
   '[data-testid="subagent-permission-source"],[data-testid="permission-app-header"],' +
   '[data-testid="inline-card-details"] dd,[data-testid="inline-card-risk"],' +
-  '[data-testid^="inline-card-option-"]';
+  '[data-testid^="inline-card-option-"],' +
+  '[data-testid="coordinator-hover-card-title"],[data-testid="coordinator-hover-card-description"],' +
+  '[data-testid="sidebar-agent-hover-card-title"],[data-testid="sidebar-agent-hover-card-description"],' +
+  '[data-testid="coordinators-show-item"],[data-testid="sidebar-wsl-label"],[data-testid="running-group-title"],' +
+  '[data-testid="permission-trigger-command"] span.font-mono,' +
+  '[data-testid="inline-card-freeform-answer"],[data-testid="ask-question-entry-readonly"],' +
+  '[data-testid="plugin-permission-name"],[data-testid="plugin-permission-default-row"],' +
+  '[data-testid^="dictation-language-option-"],[data-testid^="dictation-language-pill-"],' +
+  '[data-testid="project-selector-clone-remote-item"],[data-testid="project-selector-clone-local-item"]';
 
 // Model/user data nodes, even when rendered inside a UI popup.
 export const CONTENT =
@@ -117,6 +125,22 @@ export const UI_TARGETS =
   '[data-testid="vcs-commit-message"],[data-testid="vcs-commit-submit"],' +
   '[data-testid="coordinator-worker-stop"],[data-testid="inline-permission-card"],' +
   '[data-testid="inline-card"],' +
+  '[data-testid="app-logo-menu-trigger"],[data-testid="app-logo-menu"],' +
+  '[data-testid="custom-window-controls"],[data-testid="window-control-minimize"],' +
+  '[data-testid="window-control-maximize"],[data-testid="window-control-close"],' +
+  '[data-testid="customize-sidebar-menu"],[data-testid="coordinators-more-button"],[data-testid="new-agent-menu"],' +
+  '[data-testid="conversation-resolve-button"],[data-testid="confirm-move-conversation-project"],' +
+  '[data-testid="coordinator-hover-card"],[data-testid="sidebar-agent-hover-card"],' +
+  '[data-testid="inline-card-settled-label"],[data-testid="inline-card-freeform-input"],[data-testid="inline-card-freeform-submit"],' +
+  '[data-testid="permission-trigger-command"],[data-testid="plugin-grant-card"],' +
+  '[data-testid="plugin-permission-revoke-all-modal"],[data-testid="plugin-permissions-allowed"],' +
+  '[data-testid="plugin-permissions-included"],[data-testid="plugin-permissions-row"],' +
+  '[data-testid="plugin-theme-apply"],[data-testid="plugin-detail-added-badge"],' +
+  '[data-testid="voice-settings-dictation-languages"],[data-testid="dictation-languages-popover"],' +
+  '[data-testid="project-selector-new-remote-project"],[data-testid="project-selector-ssh-host-search"],' +
+  '[data-testid="load-older-messages-button"],[data-testid="load-newer-status"],[data-testid="hidden-slice-loading"],' +
+  '[data-testid="queued-messages-status"],[data-testid="queued-messages-card"],' +
+  '[data-testid="orchestrator-picker-default"],' +
   'input[placeholder="Search conversations..."]';
 
 export const settingsNavIds = new Set([
@@ -132,7 +156,7 @@ export const supportedSettingsHeadings = [
   'Provide Feedback', 'Give Feedback', 'Customizations', 'Notifications',
   'Project 4K', 'Interface Layout', 'Permissions', 'Global Permissions',
   'GitHub Permissions', 'File Permissions', 'Network Permissions',
-  'Terminal Commands', 'MCP Tools', 'Add MCP Servers', 'Manage Hooks',
+  'Terminal Commands', 'MCP Tools', 'Add MCP Servers', 'Manage Hooks', 'Plugin permissions',
   'Build With Google Plugins', 'Select your license', 'Developer',
   'Workspaces', 'Projects', 'Not in Project', 'Environments', 'Running (Dev only)',
 ];
@@ -142,7 +166,7 @@ export const fallbackSettingsTexts = new Set([
   'Browser Actuation Permissions', 'Models', 'Conversations', 'Shortcuts',
   'Provide Feedback', 'Give Feedback', 'Account', 'Customizations',
   'Notifications', 'Project 4K', 'Interface Layout', 'Permissions',
-  'Global Permissions', 'GitHub Permissions', 'Developer', 'Back',
+  'Global Permissions', 'GitHub Permissions', 'Plugin permissions', 'Developer', 'Back',
   'Workspaces', 'Projects', 'Not in Project', 'Environments',
   'Settings for conversations outside of projects.',
   'Settings for conversations outside of workspaces.',
@@ -215,10 +239,11 @@ export const overviewSafeTexts = new Set([
 
 export const permissionOptionSafeTexts = new Set([
   'Yes, allow', 'Yes, allow this time',
-  'Yes, allow this download', 'Yes, save rule in this conversation',
+  'Yes, allow this download', 'Yes, allow for this task',
+  'Yes, save rule in this conversation', 'Yes, allow in this conversation',
   'Yes, allow for this conversation',
   'Yes, and always allow in this conversation', 'Yes, save rule globally',
-  'Yes, and always allow',
+  'Yes, and always allow', 'Yes, always allow', 'Yes, always allow in this project',
 ]);
 
 export const permissionDownloadLabels = {
