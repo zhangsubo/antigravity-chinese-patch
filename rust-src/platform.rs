@@ -79,6 +79,9 @@ pub trait SystemOps {
     fn run_cmd(&self, program: &str, args: &[&str]) -> Result<CmdOutput, String>;
     fn clone_dir(&self, src: &Path, dst: &Path) -> Result<(), String>;
     fn is_writable(&self, path: &Path, is_dir: bool) -> bool;
+    fn list_windows_processes(&self) -> Result<Option<Vec<(u32, String)>>, String> {
+        Ok(None)
+    }
 }
 
 #[derive(Debug, Default, Clone, Copy)]
@@ -86,8 +89,15 @@ pub struct RealSystemOps;
 
 impl SystemOps for RealSystemOps {
     fn run_cmd(&self, program: &str, args: &[&str]) -> Result<CmdOutput, String> {
-        let output = Command::new(program)
-            .args(args)
+        let mut cmd = Command::new(program);
+        cmd.args(args);
+        #[cfg(windows)]
+        {
+            use std::os::windows::process::CommandExt;
+            const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+            cmd.creation_flags(CREATE_NO_WINDOW);
+        }
+        let output = cmd
             .output()
             .map_err(|e| format!("Failed to execute {program}: {e}"))?;
         Ok(CmdOutput {
@@ -95,6 +105,11 @@ impl SystemOps for RealSystemOps {
             stdout: String::from_utf8_lossy(&output.stdout).into_owned(),
             stderr: String::from_utf8_lossy(&output.stderr).into_owned(),
         })
+    }
+
+    #[cfg(windows)]
+    fn list_windows_processes(&self) -> Result<Option<Vec<(u32, String)>>, String> {
+        win_process::list_process_images().map(Some)
     }
 
     fn clone_dir(&self, src: &Path, dst: &Path) -> Result<(), String> {
@@ -720,14 +735,200 @@ pub fn is_inside_agent_session() -> bool {
         || env::var_os("ORCA_AGENT_LAUNCH").is_some()
 }
 
+#[cfg(windows)]
+mod win_process {
+    use super::strip_verbatim_prefix;
+    use std::ffi::OsString;
+    use std::os::windows::ffi::OsStringExt;
+    use std::path::Path;
+    use windows_sys::Win32::Foundation::{
+        CloseHandle, ERROR_INSUFFICIENT_BUFFER, HANDLE, INVALID_HANDLE_VALUE,
+    };
+    use windows_sys::Win32::System::Diagnostics::ToolHelp::{
+        CreateToolhelp32Snapshot, Process32FirstW, Process32NextW, PROCESSENTRY32W,
+        TH32CS_SNAPPROCESS,
+    };
+    use windows_sys::Win32::System::Threading::{
+        OpenProcess, QueryFullProcessImageNameW, TerminateProcess,
+        PROCESS_QUERY_LIMITED_INFORMATION, PROCESS_TERMINATE,
+    };
+
+    struct HandleGuard(HANDLE);
+
+    impl Drop for HandleGuard {
+        fn drop(&mut self) {
+            if !self.0.is_null() && self.0 != INVALID_HANDLE_VALUE {
+                unsafe {
+                    CloseHandle(self.0);
+                }
+            }
+        }
+    }
+
+    pub fn query_process_image_path(pid: u32) -> Option<String> {
+        let handle = unsafe { OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, 0, pid) };
+        if handle.is_null() {
+            return None;
+        }
+        let guard = HandleGuard(handle);
+
+        let mut cap = 512usize;
+        while cap <= 32768 {
+            let mut buf = vec![0u16; cap];
+            let mut len = buf.len() as u32;
+            let ok = unsafe { QueryFullProcessImageNameW(guard.0, 0, buf.as_mut_ptr(), &mut len) };
+            if ok != 0 {
+                let raw = OsString::from_wide(&buf[..len as usize]);
+                return Some(
+                    strip_verbatim_prefix(Path::new(&raw))
+                        .to_string_lossy()
+                        .into_owned(),
+                );
+            }
+            if std::io::Error::last_os_error().raw_os_error()
+                == Some(ERROR_INSUFFICIENT_BUFFER as i32)
+            {
+                cap *= 2;
+            } else {
+                return None;
+            }
+        }
+        None
+    }
+
+    pub fn list_process_images() -> Result<Vec<(u32, String)>, String> {
+        let snap = unsafe { CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0) };
+        if snap.is_null() || snap == INVALID_HANDLE_VALUE {
+            return Err(format!(
+                "CreateToolhelp32Snapshot failed: {}",
+                std::io::Error::last_os_error()
+            ));
+        }
+        let guard = HandleGuard(snap);
+
+        let mut entry: PROCESSENTRY32W = unsafe { std::mem::zeroed() };
+        entry.dwSize = std::mem::size_of::<PROCESSENTRY32W>() as u32;
+
+        if unsafe { Process32FirstW(guard.0, &mut entry) } == 0 {
+            return Ok(Vec::new());
+        }
+
+        let mut out = Vec::new();
+        loop {
+            if entry.th32ProcessID != 0 {
+                if let Some(path) = query_process_image_path(entry.th32ProcessID) {
+                    out.push((entry.th32ProcessID, path));
+                }
+            }
+            if unsafe { Process32NextW(guard.0, &mut entry) } == 0 {
+                break;
+            }
+        }
+        Ok(out)
+    }
+
+    pub fn terminate_self_binary_pid(pid: u32) -> bool {
+        if pid == 0 || pid == std::process::id() {
+            return false;
+        }
+        let Some(image_path) = query_process_image_path(pid) else {
+            return false;
+        };
+        let is_self_bin = Path::new(&image_path)
+            .file_name()
+            .and_then(|n| n.to_str())
+            .is_some_and(|n| n.eq_ignore_ascii_case("agy-zh.exe"));
+        if !is_self_bin {
+            return false;
+        }
+        let handle = unsafe { OpenProcess(PROCESS_TERMINATE, 0, pid) };
+        if handle.is_null() {
+            return false;
+        }
+        let guard = HandleGuard(handle);
+        unsafe { TerminateProcess(guard.0, 0) != 0 }
+    }
+}
+
+#[cfg(windows)]
+pub fn terminate_daemon_pid_windows(pid: u32) -> bool {
+    win_process::terminate_self_binary_pid(pid)
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ProcessMatchScope {
+    AllAppProcesses,
+    MainExecutableOnly,
+}
+
+fn matches_win32_entry(
+    norm: &str,
+    exe_target: &str,
+    res_target: &str,
+    scope: ProcessMatchScope,
+) -> bool {
+    if norm.contains("patcher.py") || is_self_tool_command(norm) {
+        return false;
+    }
+    let matches_exe = norm
+        .strip_prefix(exe_target)
+        .is_some_and(|tail| tail.is_empty() || tail.starts_with(' ') || tail.starts_with('"'));
+    match scope {
+        ProcessMatchScope::MainExecutableOnly => matches_exe,
+        ProcessMatchScope::AllAppProcesses => matches_exe || norm.starts_with(res_target),
+    }
+}
+
 pub fn is_app_running(
     app: &Path,
     platform: Platform,
     ops: &dyn SystemOps,
 ) -> Result<bool, String> {
+    is_app_running_with_scope(app, platform, ProcessMatchScope::AllAppProcesses, ops)
+}
+
+pub fn is_main_app_running(
+    app: &Path,
+    platform: Platform,
+    ops: &dyn SystemOps,
+) -> Result<bool, String> {
+    is_app_running_with_scope(app, platform, ProcessMatchScope::MainExecutableOnly, ops)
+}
+
+pub fn is_app_running_with_scope(
+    app: &Path,
+    platform: Platform,
+    scope: ProcessMatchScope,
+    ops: &dyn SystemOps,
+) -> Result<bool, String> {
     let self_pid = std::process::id();
     match platform {
         Platform::Win32 => {
+            let clean_app = strip_verbatim_prefix(app);
+            let app_norm = clean_app.to_string_lossy().replace('\\', "/").to_lowercase();
+            let app_trimmed = app_norm.trim_end_matches('/');
+            let exe_target = format!("{app_trimmed}/antigravity.exe");
+            let res_target = format!("{app_trimmed}/resources/");
+
+            if let Some(procs) = ops.list_windows_processes()? {
+                for (pid, image_path) in procs {
+                    if pid == self_pid {
+                        continue;
+                    }
+                    let clean_img = strip_verbatim_prefix(Path::new(&image_path));
+                    let norm = clean_img
+                        .to_string_lossy()
+                        .trim_start()
+                        .trim_start_matches('"')
+                        .replace('\\', "/")
+                        .to_lowercase();
+                    if matches_win32_entry(&norm, &exe_target, &res_target, scope) {
+                        return Ok(true);
+                    }
+                }
+                return Ok(false);
+            }
+
             let out = run_checked(
                 ops,
                 "powershell",
@@ -738,8 +939,6 @@ pub fn is_app_running(
                     "Get-CimInstance Win32_Process | ForEach-Object { \"$($_.ProcessId)|$($_.ExecutablePath) $($_.CommandLine)\" }",
                 ],
             )?;
-            let exe_target = format!("{}/antigravity.exe", app.to_string_lossy().replace('\\', "/").to_lowercase());
-            let res_target = format!("{}/resources/", app.to_string_lossy().replace('\\', "/").to_lowercase());
             for line in out.stdout.lines() {
                 let (pid_opt, rest) = split_optional_pid(line, '|');
                 if pid_opt == Some(self_pid) {
@@ -750,13 +949,7 @@ pub fn is_app_running(
                     .trim_start_matches('"')
                     .replace('\\', "/")
                     .to_lowercase();
-                if norm.contains("patcher.py") || is_self_tool_command(&norm) {
-                    continue;
-                }
-                let matches_exe = norm
-                    .strip_prefix(&exe_target)
-                    .is_some_and(|tail| tail.is_empty() || tail.starts_with(' ') || tail.starts_with('"'));
-                if matches_exe || norm.starts_with(&res_target) {
+                if matches_win32_entry(&norm, &exe_target, &res_target, scope) {
                     return Ok(true);
                 }
             }
@@ -777,10 +970,15 @@ pub fn is_app_running(
                 if is_self_tool_command(&norm) {
                     continue;
                 }
-                if norm.starts_with(&macos_prefix)
-                    || norm.starts_with(&frameworks_prefix)
-                    || norm.starts_with(&resources_prefix)
-                {
+                let matched = match scope {
+                    ProcessMatchScope::MainExecutableOnly => norm.starts_with(&macos_prefix),
+                    ProcessMatchScope::AllAppProcesses => {
+                        norm.starts_with(&macos_prefix)
+                            || norm.starts_with(&frameworks_prefix)
+                            || norm.starts_with(&resources_prefix)
+                    }
+                };
+                if matched {
                     return Ok(true);
                 }
             }
@@ -801,7 +999,17 @@ pub fn is_app_running(
                 if norm.contains("patcher.py") || is_self_tool_command(&norm) {
                     continue;
                 }
-                if norm == exe_target || norm.starts_with(&exe_space) || norm.starts_with(&res_target) {
+                let matched = match scope {
+                    ProcessMatchScope::MainExecutableOnly => {
+                        norm == exe_target || norm.starts_with(&exe_space)
+                    }
+                    ProcessMatchScope::AllAppProcesses => {
+                        norm == exe_target
+                            || norm.starts_with(&exe_space)
+                            || norm.starts_with(&res_target)
+                    }
+                };
+                if matched {
                     return Ok(true);
                 }
             }
@@ -1049,5 +1257,105 @@ mod tests {
             writable: true,
         };
         assert!(is_app_running(&win_app, Platform::Win32, &win_running).unwrap());
+    }
+
+    struct MockNativeWinOps {
+        procs: Vec<(u32, String)>,
+    }
+
+    impl SystemOps for MockNativeWinOps {
+        fn run_cmd(&self, _program: &str, _args: &[&str]) -> Result<CmdOutput, String> {
+            panic!("PowerShell should not be invoked when native enumeration is available");
+        }
+
+        fn clone_dir(&self, _src: &Path, _dst: &Path) -> Result<(), String> {
+            Ok(())
+        }
+
+        fn is_writable(&self, _path: &Path, _is_dir: bool) -> bool {
+            true
+        }
+
+        fn list_windows_processes(&self) -> Result<Option<Vec<(u32, String)>>, String> {
+            Ok(Some(self.procs.clone()))
+        }
+    }
+
+    #[test]
+    fn main_app_running_excludes_resources_while_ensure_stopped_catches_them() {
+        let win_app = PathBuf::from(r"\\?\C:\Users\Demo\AppData\Local\Programs\Antigravity\");
+        let win_ls_ps = MockPsOps {
+            stdout: r"9999|C:\Users\demo\AppData\Local\Programs\Antigravity\resources\bin\language_server.exe --standalone".to_string(),
+            writable: true,
+        };
+        assert!(!is_main_app_running(&win_app, Platform::Win32, &win_ls_ps).unwrap());
+        assert!(is_app_running(&win_app, Platform::Win32, &win_ls_ps).unwrap());
+        assert!(ensure_stopped(&win_app, Platform::Win32, &win_ls_ps).is_err());
+
+        let win_ls_native = MockNativeWinOps {
+            procs: vec![
+                (
+                    std::process::id(),
+                    r"C:\Users\demo\AppData\Local\Programs\Antigravity\Antigravity.exe".to_string(),
+                ),
+                (
+                    8888,
+                    r"\\?\C:\Users\demo\AppData\Local\Programs\Antigravity\resources\bin\language_server.exe"
+                        .to_string(),
+                ),
+            ],
+        };
+        assert!(!is_main_app_running(&win_app, Platform::Win32, &win_ls_native).unwrap());
+        assert!(is_app_running(&win_app, Platform::Win32, &win_ls_native).unwrap());
+        assert!(ensure_stopped(&win_app, Platform::Win32, &win_ls_native).is_err());
+
+        let win_main_native = MockNativeWinOps {
+            procs: vec![(
+                7777,
+                r"\\?\C:\Users\DEMO\AppData\Local\Programs\Antigravity\Antigravity.exe".to_string(),
+            )],
+        };
+        assert!(is_main_app_running(&win_app, Platform::Win32, &win_main_native).unwrap());
+        assert!(is_app_running(&win_app, Platform::Win32, &win_main_native).unwrap());
+
+        let darwin_app = PathBuf::from("/Applications/Antigravity.app");
+        let darwin_ls = MockPsOps {
+            stdout: "100 /Applications/Antigravity.app/Contents/Resources/bin/language_server --standalone\n".to_string(),
+            writable: true,
+        };
+        assert!(!is_main_app_running(&darwin_app, Platform::Darwin, &darwin_ls).unwrap());
+        assert!(is_app_running(&darwin_app, Platform::Darwin, &darwin_ls).unwrap());
+        assert!(ensure_stopped(&darwin_app, Platform::Darwin, &darwin_ls).is_err());
+
+        let darwin_main = MockPsOps {
+            stdout: "101 /Applications/Antigravity.app/Contents/MacOS/Antigravity\n".to_string(),
+            writable: true,
+        };
+        assert!(is_main_app_running(&darwin_app, Platform::Darwin, &darwin_main).unwrap());
+
+        let linux_app = PathBuf::from("/opt/Antigravity");
+        let linux_ls = MockPsOps {
+            stdout: "200 /opt/Antigravity/resources/bin/language_server --standalone\n".to_string(),
+            writable: true,
+        };
+        assert!(!is_main_app_running(&linux_app, Platform::Linux, &linux_ls).unwrap());
+        assert!(is_app_running(&linux_app, Platform::Linux, &linux_ls).unwrap());
+        assert!(ensure_stopped(&linux_app, Platform::Linux, &linux_ls).is_err());
+
+        let linux_main = MockPsOps {
+            stdout: "201 /opt/Antigravity/antigravity --type=renderer\n".to_string(),
+            writable: true,
+        };
+        assert!(is_main_app_running(&linux_app, Platform::Linux, &linux_main).unwrap());
+    }
+
+    #[test]
+    fn win32_native_process_list_skips_powershell() {
+        let win_app = PathBuf::from(r"C:\Users\demo\AppData\Local\Programs\Antigravity");
+        let ops = MockNativeWinOps {
+            procs: vec![(4321, r"C:\Windows\System32\notepad.exe".to_string())],
+        };
+        assert!(!is_main_app_running(&win_app, Platform::Win32, &ops).unwrap());
+        assert!(!is_app_running(&win_app, Platform::Win32, &ops).unwrap());
     }
 }

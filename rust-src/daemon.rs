@@ -1,9 +1,11 @@
 use crate::cdp::{fetch_targets, poll_and_inject};
 use crate::custom_dict::{load_custom_translations, LoadedCustomDict};
 use crate::platform::{
-    app_platform, default_app_path, is_app_running, lexically_abs, user_log_file, user_runtime_dir,
-    Platform, RealSystemOps,
+    app_platform, default_app_path, is_main_app_running, lexically_abs, user_log_file,
+    user_runtime_dir, Platform, RealSystemOps,
 };
+#[cfg(windows)]
+use crate::platform::terminate_daemon_pid_windows;
 use serde::{Deserialize, Serialize};
 use std::fs::{self, File, OpenOptions};
 use std::io::Write;
@@ -23,6 +25,30 @@ fn disconnect_expired(start: Instant, last_connected: Option<Instant>, now: Inst
     match last_connected {
         Some(last) => now.duration_since(last) >= Duration::from_secs(30),
         None => now.duration_since(start) >= Duration::from_secs(90),
+    }
+}
+
+fn should_probe_app_process(last_probe: Option<Instant>, now: Instant) -> bool {
+    match last_probe {
+        None => true,
+        Some(prev) => now.duration_since(prev) >= Duration::from_secs(5),
+    }
+}
+
+fn sleep_interruptible_at(duration: Duration, stop_flag: &Path) -> bool {
+    let deadline = Instant::now() + duration;
+    loop {
+        if SIGNAL_STOP.load(Ordering::SeqCst) || stop_flag.exists() {
+            return true;
+        }
+        let now = Instant::now();
+        if now >= deadline {
+            return false;
+        }
+        let step = deadline
+            .saturating_duration_since(now)
+            .min(Duration::from_millis(100));
+        thread::sleep(step);
     }
 }
 
@@ -322,7 +348,7 @@ pub fn run_cdp(opts: RunOptions) -> Result<RunReport, String> {
         _ => false,
     };
 
-    if !attach_existing && is_app_running(&app, platform, &RealSystemOps)? {
+    if !attach_existing && is_main_app_running(&app, platform, &RealSystemOps)? {
         return Err(
             "Antigravity Desktop 正在运行且未开启本地调试端口；请先完全退出客户端（macOS 按 Cmd+Q），再运行 `agy-zh run`"
                 .to_string(),
@@ -396,9 +422,9 @@ fn spawn_detached_daemon(
     #[cfg(windows)]
     {
         use std::os::windows::process::CommandExt;
-        const DETACHED_PROCESS: u32 = 0x0000_0008;
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
         const CREATE_NEW_PROCESS_GROUP: u32 = 0x0000_0200;
-        cmd.creation_flags(DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP);
+        cmd.creation_flags(CREATE_NO_WINDOW | CREATE_NEW_PROCESS_GROUP);
     }
 
     let mut child = cmd
@@ -469,6 +495,7 @@ fn run_foreground_loop(
 
     let start = Instant::now();
     let mut last_connected = None;
+    let mut last_process_probe: Option<Instant> = None;
     let mut miss_count = 0u32;
 
     loop {
@@ -479,19 +506,22 @@ fn run_foreground_loop(
         match poll_and_inject(port, custom_dict) {
             Ok(_cycle) => {
                 last_connected = Some(Instant::now());
+                last_process_probe = None;
                 miss_count = 0;
             }
             Err(_) => {
                 miss_count = miss_count.saturating_add(1);
-                if disconnect_expired(start, last_connected, Instant::now()) {
+                let now = Instant::now();
+                if disconnect_expired(start, last_connected, now) {
                     break;
                 }
                 let past_startup = last_connected.is_some() || start.elapsed() > Duration::from_secs(12);
-                if past_startup
-                    && miss_count >= 3
-                    && !is_app_running(app, platform, &RealSystemOps).unwrap_or(false)
+                if past_startup && miss_count >= 3 && should_probe_app_process(last_process_probe, now)
                 {
-                    break;
+                    last_process_probe = Some(now);
+                    if !is_main_app_running(app, platform, &RealSystemOps).unwrap_or(false) {
+                        break;
+                    }
                 }
             }
         }
@@ -501,7 +531,9 @@ fn run_foreground_loop(
         } else {
             Duration::from_millis(2000)
         };
-        thread::sleep(interval);
+        if sleep_interruptible_at(interval, &stop_flag_path()) {
+            break;
+        }
     }
 
     let _ = fs::remove_file(state_path());
@@ -548,6 +580,10 @@ pub fn stop_daemon() -> Result<StopReport, String> {
     }
 
     let deadline = Instant::now() + Duration::from_secs(4);
+    #[cfg(windows)]
+    let force_after = Instant::now() + Duration::from_millis(2500);
+    #[cfg(windows)]
+    let mut force_attempted = false;
     while Instant::now() < deadline {
         if !daemon_status_summary().running {
             let _ = fs::remove_file(state_path());
@@ -558,6 +594,13 @@ pub fn stop_daemon() -> Result<StopReport, String> {
                 port: summary.port,
                 reason: None,
             });
+        }
+        #[cfg(windows)]
+        if !force_attempted && Instant::now() >= force_after {
+            force_attempted = true;
+            if let Some(pid) = summary.pid {
+                let _ = terminate_daemon_pid_windows(pid);
+            }
         }
         thread::sleep(Duration::from_millis(100));
     }
@@ -607,5 +650,34 @@ mod tests {
 
         drop(guard);
         assert!(!daemon_status_summary_at(&lock, &state).running);
+    }
+
+    #[test]
+    fn process_probe_throttling_respects_cooldown() {
+        let base = Instant::now();
+        assert!(should_probe_app_process(None, base));
+        assert!(!should_probe_app_process(
+            Some(base),
+            base + Duration::from_millis(4999)
+        ));
+        assert!(should_probe_app_process(
+            Some(base),
+            base + Duration::from_secs(5)
+        ));
+    }
+
+    #[test]
+    fn sleep_interruptible_returns_early_when_stop_flag_exists() {
+        let (_tmp, root) = canonical_temp_dir();
+        let stop_flag = root.join("cdp-daemon.stop");
+
+        let t0 = Instant::now();
+        assert!(!sleep_interruptible_at(Duration::from_millis(30), &stop_flag));
+        assert!(t0.elapsed() >= Duration::from_millis(20));
+
+        fs::write(&stop_flag, b"stop\n").unwrap();
+        let t1 = Instant::now();
+        assert!(sleep_interruptible_at(Duration::from_secs(2), &stop_flag));
+        assert!(t1.elapsed() < Duration::from_millis(500));
     }
 }
