@@ -470,6 +470,69 @@
           ["buttons: ['OK'],", "buttons: ['确定'],"]
         ]
       }
+    },
+    "2.35.2": {
+      "platforms": ["darwin", "linux", "win32"],
+      "preload_sha256": "2973a6bfd3154fd20c58cbb6643dbf0a5e0cc4fd8a5894c4496f3db5c6231475",
+      "entry": "dist/preload.js",
+      "native_ui_tested": false,
+      "native_ui_tested_platforms": ["linux"],
+      "main_swarm_hook": true,
+      "text_patches": {
+        "dist/preload.js": {
+          "sha256": "2973a6bfd3154fd20c58cbb6643dbf0a5e0cc4fd8a5894c4496f3db5c6231475",
+          "replacements": [
+            [
+              "showContextMenu: (items) => electron_1.ipcRenderer.invoke('window:show-context-menu', items),",
+              "showContextMenu: (items) => electron_1.ipcRenderer.invoke('window:show-context-menu', globalThis.__antigravity_chinese_patch__ ? globalThis.__antigravity_chinese_patch__.translateMenu(items) : items),"
+            ]
+          ]
+        },
+        "dist/main.js": {
+          "sha256": "e4dd0d71d96f7fdcb5af5b86395cebac8d2367812604fa331429570a442fed69",
+          "replacements": [
+            ["label: 'New Window',", "label: '新建窗口',"],
+            ["label: 'No agents running',", "label: '暂无运行中的智能体',"],
+            ["label: `Open ${electron_1.app.getName()}`,", "label: `打开 ${electron_1.app.getName()}`,"],
+            ["label: 'Quit',", "label: '退出',"],
+            ["buttons: ['Cancel', 'Quit'],", "buttons: ['取消', '退出'],"],
+            ["title: 'Confirm Quit',", "title: '确认退出',"],
+            ["message: 'Are you sure you want to quit?',", "message: '确定要退出吗？',"],
+            ["detail: 'There may be agents or background tasks running.',", "detail: '当前可能有智能体或后台任务正在运行。',"],
+            ["showErrorBox('Binary not found'", "showErrorBox('未找到二进制文件'"],
+            ["showErrorBox('Startup failed'", "showErrorBox('启动失败'"]
+          ]
+        },
+        "dist/tray.js": {
+          "sha256": "6c6b0968b45a1c7088e459657d57a9efd72d3733614349095f17b6ee94b47135",
+          "replacements": [
+            [
+              "(count > 0 ? `${count}` : 'No') +\n                    ' agent' +\n                    (count === 1 ? '' : 's') +\n                    ' running'",
+              "(count > 0 ? `${count} 个智能体正在运行` : '暂无运行中的智能体')"
+            ]
+          ]
+        }
+      },
+      "optional_anchor_patches": {
+        "dist/cablev2.js": [
+          ["const html = buildCableQrModalHtml(rpId, qrSvg);", "const html = buildCableQrModalHtml(rpId, qrSvg);\n    win.webContents.once('did-finish-load', () => electron_1.app.emit('agy-zh-passkey-sheet', win, validParent));"]
+        ],
+        "dist/menu.js": [
+          ["label: 'New Window',", "label: '新建窗口',"],
+          ["label: 'Docs',", "label: '官方文档',"],
+          ["label: 'Connect to WSL',", "label: '连接到 WSL',"],
+          ["label: 'Reopen Locally',", "label: '在本地重新打开',"]
+        ],
+        "dist/updater.js": [
+          ["MenuUpdateStep[\"CheckForUpdates\"] = \"Check for Updates\"", "MenuUpdateStep[\"CheckForUpdates\"] = \"检查更新\""],
+          ["MenuUpdateStep[\"CheckingForUpdates\"] = \"Checking for Updates...\"", "MenuUpdateStep[\"CheckingForUpdates\"] = \"正在检查更新...\""],
+          ["MenuUpdateStep[\"DownloadingUpdate\"] = \"Downloading Update...\"", "MenuUpdateStep[\"DownloadingUpdate\"] = \"正在下载更新...\""],
+          ["MenuUpdateStep[\"RestartToUpdate\"] = \"Restart to Update\"", "MenuUpdateStep[\"RestartToUpdate\"] = \"重启以应用更新\""],
+          ["title: 'Check for Updates',", "title: '检查更新',"],
+          ["message: 'No updates available',", "message: '暂无可用更新',"],
+          ["buttons: ['OK'],", "buttons: ['确定'],"]
+        ]
+      }
     }
   },
   "anchor_rules": {

@@ -52,6 +52,8 @@
   "Answered": "已回答",
   "Answered in chat": "已在对话中回复",
   "Answered:": "已回答：",
+  "Applies to /btw and messages sent after this turn": "适用于 /btw 及本轮之后发送的消息",
+  "Applies to messages sent after this turn": "适用于本轮之后发送的消息",
   "Approve": "批准",
   "Are you sure you want to delete this side question? This action cannot be undone.": "确定要删除这条旁路提问吗？此操作无法撤销。",
   "Ask /btw": "顺便问 (/btw)",

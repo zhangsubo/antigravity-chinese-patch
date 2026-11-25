@@ -2152,3 +2152,26 @@ test('v3.0.4 translates 2.35.0 custom window controls, sidebar menu, inline card
  w.__antigravity_chinese_patch__.dispose();
  dom.window.close();
 });
+
+test('v3.0.5 translates 2.35.2 model-selector tooltip notices and Version 2.35.2 while restoring cleanly', () => {
+ const body = `
+  <div role="menu" data-testid="app-logo-menu">
+   <span>Version 2.35.2</span>
+  </div>
+  <div role="tooltip" id="tt-btw">Applies to /btw and messages sent after this turn</div>
+  <div role="tooltip" id="tt-next">Applies to messages sent after this turn</div>
+ `;
+ const dom = create(body);
+ const w = dom.window;
+ const d = w.document;
+ assert.equal(d.querySelector('[data-testid="app-logo-menu"] span').textContent, '版本 2.35.2');
+ assert.equal(d.querySelector('#tt-btw').textContent, '适用于 /btw 及本轮之后发送的消息');
+ assert.equal(d.querySelector('#tt-next').textContent, '适用于本轮之后发送的消息');
+
+ w.__antigravity_chinese_patch__.setEnabled(false);
+ assert.equal(d.querySelector('[data-testid="app-logo-menu"] span').textContent, 'Version 2.35.2');
+ assert.equal(d.querySelector('#tt-btw').textContent, 'Applies to /btw and messages sent after this turn');
+ assert.equal(d.querySelector('#tt-next').textContent, 'Applies to messages sent after this turn');
+ w.__antigravity_chinese_patch__.dispose();
+ dom.window.close();
+});

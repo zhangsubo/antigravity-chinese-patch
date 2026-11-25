@@ -1,5 +1,11 @@
 # 更新日志
 
+## [3.0.5] - 2026-11-26
+
+- 新增 Antigravity Desktop **2.35.2**（Build `2.35.2-4585983447007232`）三平台精确指纹（跨平台 `resources/app.asar` SHA-256 `e057115571cf5085406d20f2427a5afac272b712ec84332c7157da0113d4b2d0`；`dist/preload.js`、`dist/main.js`、`dist/tray.js`、`dist/cablev2.js`、`dist/menu.js`、`dist/updater.js` 共 24 条规则）。
+- 补充 Desktop 2.35.2 模型选择器新提示词条（`Applies to /btw and messages sent after this turn`、`Applies to messages sent after this turn`，同时保留旧版词条兼容性；主界面精确词条增至 **2,337 条**，动态规则 **64 条**；Swarm 面板 **156 条**精确词条 + **11 条**规则）。
+- Linux x64 已在 Instabox `box-856891`（Debian 13 x86_64 + XFCE `DISPLAY=:1`）完成 `2.35.2` 静态补丁全生命周期（`doctor` / 非特权拦截 / `install` / 实机切换 / 运行期还原拦截 / 重启保持中文 / `restore` 无损还原）与 `agy-zh run` 动态守护模式（含主界面、设置中心、Swarm 子帧中英同步）真实桌面实测；macOS 与 Windows 已核验 2.35.2 官方包指纹与离线 `doctor`，真机桌面待手工测试验收。
+
 ## [3.0.4] - 2026-11-25
 
 - 新增 Antigravity Desktop **2.35.0**（Build `2.35.0-6394266482769920`）三平台精确指纹（`dist/preload.js`、`dist/main.js`、`dist/tray.js`、`dist/cablev2.js`、`dist/menu.js`、`dist/updater.js` 共 24 条规则）。

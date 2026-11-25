@@ -1,6 +1,6 @@
 {
   "name": "@zhangsubo/antigravity-chinese-patch",
-  "version": "3.0.4",
+  "version": "3.0.5",
   "private": true,
   "type": "module",
   "description": "Dual-mode Simplified Chinese UI localization for Google Antigravity Desktop",
