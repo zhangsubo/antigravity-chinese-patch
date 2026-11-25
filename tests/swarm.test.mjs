@@ -31,6 +31,12 @@ const swarmHtml = `
   <label class="switch" title="Keep the newest post in view"><span>Follow</span></label>
 </section>
 <section id="feed">
+  <div class="feed-empty" data-testid="swarm-feed-empty">
+    <div class="feed-empty-title">No loaded posts match</div>
+    <div>12 earlier posts could not be loaded.</div>
+    <button type="button" data-testid="swarm-load-earlier" id="swarm-load-err">Retry loading 12 earlier posts</button>
+  </div>
+  <button type="button" data-testid="swarm-load-earlier" id="swarm-load-btn">Show 50 earlier posts (120 older)</button>
   <article class="msg">
     <div class="msg-head">
       <span class="msg-author" title="Coordinator">Alice</span>
@@ -143,6 +149,10 @@ test('Swarm runtime translates scoped UI controls while protecting names, bodies
   assert.equal(d.querySelector('#gif-modal-close').getAttribute('aria-label'), '关闭预览');
   assert.equal(d.querySelector('#gif-modal .gif-modal-hint').textContent, '右键点击图片即可保存，也可在新标签页中打开。');
   assert.equal(d.querySelector('#gif-modal-open').textContent, '在新标签页中打开');
+  assert.equal(d.querySelector('#feed .feed-empty-title').textContent, '已加载消息中没有匹配项');
+  assert.equal(d.querySelector('#feed [data-testid="swarm-feed-empty"] > div:nth-child(2)').textContent, '有 12 条更早消息未能加载。');
+  assert.equal(d.querySelector('#swarm-load-err').textContent, '重试加载 12 条更早消息');
+  assert.equal(d.querySelector('#swarm-load-btn').textContent, '显示更早的 50 条消息（还有 120 条较早消息）');
 
   // If a translated node is moved into a protected container, revert it automatically
   const note = d.querySelector('.msg-note');
@@ -157,6 +167,7 @@ test('Swarm runtime translates scoped UI controls while protecting names, bodies
     data: { channel: '__antigravity_chinese_patch_lang__', enabled: false },
   }));
   assert.equal(d.querySelector('#tabbtn-overview').textContent, 'Overview');
+  assert.equal(d.querySelector('#swarm-load-btn').textContent, 'Show 50 earlier posts (120 older)');
   assert.equal(d.querySelector('#f-search').getAttribute('placeholder'), 'Search posts');
   assert.equal(d.querySelector('.o2-progt').textContent, '3 of 7 tasks done');
 
