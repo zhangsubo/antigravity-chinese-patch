@@ -7,6 +7,7 @@
   - 自定义窗口控件与左上角应用图标菜单（`custom-window-controls`、`app-logo-menu`）、侧边栏收件箱模式与自定义菜单（`customize-sidebar-menu`、`Inbox Mode`、`Auto-Resolve`、`Working Section`、`Resolve conversation`、`Move Conversation`）、新建个人/团队智能体菜单（`new-agent-menu`）及悬浮卡片状态标签（保护标题、描述与邮箱）；
   - 新版内联权限/问答卡片（`inline-permission-card` 的 `Yes, allow for this task` / `Yes, always allow in this project` 与 `permission-trigger-command`、保护命令文本；`inline-card` 的已处理标签与自由回答输入框）、插件权限设置与撤销弹窗（`plugin-permissions-*`、`plugin-grant-card`）、语音听写语言多选设置（`voice-settings-dictation-languages`，保护语言原名）以及消息加载与排队发送状态栏；
   - 补充 2.35.0 设置项（如 `Prevent sleep`、`Keep in menu bar`、`Notification settings` 等 sentence-case 标签）与 Swarm「加载更早消息」动态提示（`swarm-load-earlier`）。
+- 修复 Windows 上模式一（`agy-zh run`）退出 Antigravity 后无限弹出 PowerShell 控制台窗口的问题（[#1](https://github.com/zhangsubo/antigravity-chinese-patch/issues/1)）：`run_cmd` 与守护进程启动统一切换 `CREATE_NO_WINDOW`，存活判定收紧为仅匹配 `Antigravity.exe` 主进程（`language_server.exe` 等 `resources\` 残留不再误判客户端存活），Windows 进程探测改为原生 Toolhelp32 枚举（不再 shell 出 PowerShell）并加 5 秒冷却，`agy-zh stop` 在 Windows 上 2.5 秒后强制结束守护进程、轮询睡眠支持 100ms 级中断响应。真机验收待完成。
 - Linux x64 已在 Instabox `box-856891`（Debian 13 x86_64 + XFCE `DISPLAY=:1`）完成 `2.35.0` 静态补丁全生命周期（`doctor` / 非特权拦截 / `install` / 实机切换 / 运行期还原拦截 / 重启保持中文 / `restore` 无损还原）与 `agy-zh run` 动态守护模式（含主界面、设置中心、Swarm 子帧中英同步）真实桌面实测；macOS 与 Windows 已核验 2.35.0 官方包指纹，真机桌面待手工测试验收。
 
 ## [3.0.3] - 2026-11-22
