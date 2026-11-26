@@ -1,5 +1,5 @@
 {
-  "version": "3.0.4",
+  "version": "3.0.5",
   "exact": {
     "(ADC)": "（应用默认凭据 ADC）",
     "(tell the agent what to do instead)": "（告诉智能体改用什么方式处理）",
@@ -165,6 +165,8 @@
     "Application": "应用",
     "Application Menu": "应用菜单",
     "Applied": "已应用",
+    "Applies to /btw and messages sent after this turn": "适用于 /btw 及本轮之后发送的消息",
+    "Applies to messages sent after this turn": "适用于本轮之后发送的消息",
     "Apply": "应用",
     "Approve": "批准",
     "Approximate; may start a few minutes later": "时间仅供参考，可能会延迟几分钟启动",
