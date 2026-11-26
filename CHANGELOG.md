@@ -4,7 +4,8 @@
 
 - 新增 Antigravity Desktop **2.35.2**（Build `2.35.2-4585983447007232`）三平台精确指纹（跨平台 `resources/app.asar` SHA-256 `e057115571cf5085406d20f2427a5afac272b712ec84332c7157da0113d4b2d0`；`dist/preload.js`、`dist/main.js`、`dist/tray.js`、`dist/cablev2.js`、`dist/menu.js`、`dist/updater.js` 共 24 条规则）。
 - 补充 Desktop 2.35.2 模型选择器新提示词条（`Applies to /btw and messages sent after this turn`、`Applies to messages sent after this turn`，同时保留旧版词条兼容性；主界面精确词条增至 **2,337 条**，动态规则 **64 条**；Swarm 面板 **156 条**精确词条 + **11 条**规则）。
-- Linux x64 已在 Instabox `box-856891`（Debian 13 x86_64 + XFCE `DISPLAY=:1`）完成 `2.35.2` 静态补丁全生命周期（`doctor` / 非特权拦截 / `install` / 实机切换 / 运行期还原拦截 / 重启保持中文 / `restore` 无损还原）与 `agy-zh run` 动态守护模式（含主界面、设置中心、Swarm 子帧中英同步）真实桌面实测；macOS 与 Windows 已核验 2.35.2 官方包指纹与离线 `doctor`，真机桌面待手工测试验收。
+- Linux x64 已在 Instabox `box-856891`（Debian 13 x86_64 + XFCE `DISPLAY=:1`）完成 `2.35.2` 静态补丁全生命周期（`doctor` / 非特权拦截 / `install` / 实机切换 / 运行期还原拦截 / 重启保持中文 / `restore` 无损还原）与 `agy-zh run` 动态守护模式（含主界面、设置中心、Swarm 子帧中英同步）真实桌面实测；Windows 11 x64 已完成官方 `2.35.2` 静态补丁全生命周期、CDP 动态守护（含主界面、设置中心与 Swarm 子帧同步切换）、桌面 `.lnk` 快捷方式及客户端退出后守护自退零弹窗（[#1](https://github.com/zhangsubo/antigravity-chinese-patch/issues/1)）真机实测验收，`2.35.2` 的 `native_ui_tested_platforms` 启用 `["linux", "win32"]`；macOS 已核验 2.35.2 官方包指纹与离线 `doctor`，真机桌面待手工测试验收。
+- 修复 Windows 上通过管道捕获 `agy-zh run` 标准输出时子进程继承标准句柄导致调用方阻塞的问题（在派生后台守护及客户端进程前清除标准句柄继承标志 `HANDLE_FLAG_INHERIT`），修复非管理员/未开启开发者模式 Windows 环境下 `cargo test` 创建测试目录链接的权限报错（回退 `mklink /J` 目录联接并规范化路径分隔符），加固 Windows 下 `leave_app_dir_if_inside` 路径大小写不敏感匹配，并补充 Windows / Linux 快捷方式沙盒单测（29 项 Rust 单测 0 warning 全通过）。
 
 ## [3.0.4] - 2026-11-25
 

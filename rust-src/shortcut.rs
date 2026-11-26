@@ -399,9 +399,13 @@ fn manage_windows_shortcut(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::platform::{canonical_temp_dir, CmdOutput};
+    use crate::platform::canonical_temp_dir;
+    #[cfg(target_os = "macos")]
+    use crate::platform::CmdOutput;
 
+    #[cfg(target_os = "macos")]
     struct MockShortcutOps;
+    #[cfg(target_os = "macos")]
     impl SystemOps for MockShortcutOps {
         fn run_cmd(&self, _program: &str, _args: &[&str]) -> Result<CmdOutput, String> {
             Ok(CmdOutput {
@@ -479,5 +483,86 @@ mod tests {
         let removed = manage_macos_shortcut(&fake_app, &out_dir, &bin_dir, true, &ops).unwrap();
         assert_eq!(removed.action, "removed");
         assert!(!bundle.exists());
+    }
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn windows_shortcut_create_and_remove_in_sandbox() {
+        let (_tmp, root) = canonical_temp_dir();
+        let fake_app = root.join("Antigravity");
+        fs::create_dir_all(&fake_app).unwrap();
+        fs::write(fake_app.join("Antigravity.exe"), b"MZ").unwrap();
+        let out_dir = root.join("OutDesktop");
+        let bin_dir = root.join("bin");
+
+        let ops = RealSystemOps;
+        let created = manage_windows_shortcut(&fake_app, &out_dir, &bin_dir, false, &ops).unwrap();
+        assert_eq!(created.action, "created");
+        assert_eq!(created.platform, "win32");
+
+        let lnk = out_dir.join("Antigravity 中文.lnk");
+        let stable_bin = bin_dir.join("agy-zh.exe");
+        assert!(lnk.is_file(), "expected shortcut at {}", lnk.display());
+        assert!(
+            stable_bin.is_file(),
+            "expected stable binary at {}",
+            stable_bin.display()
+        );
+
+        let inspect_ps = format!(
+            "$ws = New-Object -ComObject WScript.Shell; \
+             $sc = $ws.CreateShortcut({}); \
+             [PSCustomObject]@{{ TargetPath=$sc.TargetPath; Arguments=$sc.Arguments; WindowStyle=$sc.WindowStyle; IconLocation=$sc.IconLocation }} | ConvertTo-Json -Compress",
+            powershell_single_quote(&lnk.to_string_lossy())
+        );
+        let out = run_checked(
+            &ops,
+            "powershell",
+            &["-NoProfile", "-NonInteractive", "-Command", &inspect_ps],
+        )
+        .unwrap();
+        let parsed: serde_json::Value = serde_json::from_str(out.stdout.trim()).unwrap();
+        assert_eq!(
+            parsed["TargetPath"].as_str().unwrap().to_lowercase(),
+            stable_bin.to_string_lossy().to_lowercase()
+        );
+        assert!(parsed["Arguments"]
+            .as_str()
+            .unwrap()
+            .contains(&fake_app.to_string_lossy().to_string()));
+        assert_eq!(parsed["WindowStyle"].as_i64(), Some(7));
+        assert!(parsed["IconLocation"]
+            .as_str()
+            .unwrap()
+            .to_lowercase()
+            .contains("antigravity.exe,0"));
+
+        let removed = manage_windows_shortcut(&fake_app, &out_dir, &bin_dir, true, &ops).unwrap();
+        assert_eq!(removed.action, "removed");
+        assert!(!lnk.exists());
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn linux_shortcut_create_and_remove_in_sandbox() {
+        let (_tmp, root) = canonical_temp_dir();
+        let fake_app = root.join("Antigravity");
+        fs::create_dir_all(fake_app.join("resources/app/resources/linux")).unwrap();
+        fs::write(fake_app.join("resources/app/resources/linux/code.png"), b"PNG").unwrap();
+        let out_dir = root.join("applications");
+        let bin_dir = root.join("bin");
+
+        let created = manage_linux_shortcut(&fake_app, &out_dir, &bin_dir, false).unwrap();
+        assert_eq!(created.action, "created");
+        assert_eq!(created.platform, "linux");
+        let desktop_file = out_dir.join("antigravity-zh.desktop");
+        assert!(desktop_file.is_file());
+        let content = fs::read_to_string(&desktop_file).unwrap();
+        assert!(content.contains("Name=Antigravity 中文"));
+        assert!(content.contains("code.png"));
+
+        let removed = manage_linux_shortcut(&fake_app, &out_dir, &bin_dir, true).unwrap();
+        assert_eq!(removed.action, "removed");
+        assert!(!desktop_file.exists());
     }
 }

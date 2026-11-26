@@ -1022,7 +1022,10 @@ mod tests {
         let preload_hash = sha256_hex(fake_preload_bytes());
         let main_hash = sha256_hex(fake_main_bytes());
         let tray_hash = sha256_hex(fake_tray_bytes());
-        for ver in ["2.22.0", "2.23.0", "2.29.1", "2.31.2", "2.32.1", "2.32.2", "2.33.0", "2.33.1", "2.34.0"] {
+        for ver in [
+            "2.22.0", "2.23.0", "2.29.1", "2.31.2", "2.32.1", "2.32.2", "2.33.0", "2.33.1",
+            "2.34.0", "2.35.0", "2.35.2",
+        ] {
             if let Some(rule) = m.verified_versions.get_mut(ver) {
                 rule.preload_sha256 = preload_hash.clone();
                 if let Some(tp) = rule.text_patches.get_mut("dist/preload.js") {
@@ -1098,7 +1101,10 @@ mod tests {
         let ops = MockInstallerOps::default();
         let dict = LoadedCustomDict::empty();
 
-        for ver in ["2.22.0", "2.23.0", "2.29.1", "2.31.2", "2.32.1", "2.32.2", "2.33.0", "2.33.1", "2.34.0"] {
+        for ver in [
+            "2.22.0", "2.23.0", "2.29.1", "2.31.2", "2.32.1", "2.32.2", "2.33.0", "2.33.1",
+            "2.34.0", "2.35.0", "2.35.2",
+        ] {
             let (_tmp, root) = canonical_temp_dir();
             let (app, orig_asar) = create_darwin_app(&root, ver);
 
@@ -1393,12 +1399,10 @@ mod tests {
 
         write_darwin_plist(&app, "2.32.1", &good_asar);
         let alias = root.join("Alias.app");
-        #[cfg(unix)]
-        std::os::unix::fs::symlink(&app, &alias).unwrap();
-        #[cfg(windows)]
-        std::os::windows::fs::symlink_dir(&app, &alias).unwrap();
+        crate::platform::create_test_dir_link(&app, &alias);
         let err = inspect_app_with_manifest(&alias, &m).unwrap_err();
         assert!(err.contains("Symlink application paths"));
+        let _ = fs::remove_dir(&alias).or_else(|_| fs::remove_file(&alias));
     }
 
     #[test]

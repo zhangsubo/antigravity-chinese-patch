@@ -244,6 +244,24 @@ pub fn pick_free_port(requested: Option<u16>) -> Result<u16, String> {
     Ok(port)
 }
 
+#[cfg(windows)]
+fn clear_stdio_inheritance() {
+    use windows_sys::Win32::Foundation::{
+        SetHandleInformation, HANDLE_FLAG_INHERIT, INVALID_HANDLE_VALUE,
+    };
+    use windows_sys::Win32::System::Console::{
+        GetStdHandle, STD_ERROR_HANDLE, STD_INPUT_HANDLE, STD_OUTPUT_HANDLE,
+    };
+    unsafe {
+        for kind in [STD_INPUT_HANDLE, STD_OUTPUT_HANDLE, STD_ERROR_HANDLE] {
+            let h = GetStdHandle(kind);
+            if !h.is_null() && h != INVALID_HANDLE_VALUE {
+                let _ = SetHandleInformation(h, HANDLE_FLAG_INHERIT, 0);
+            }
+        }
+    }
+}
+
 fn launch_app_with_cdp(app: &Path, platform: Platform, port: u16) -> Result<(), String> {
     let port_flag = format!("--remote-debugging-port={port}");
     let addr_flag = "--remote-debugging-address=127.0.0.1";
@@ -294,6 +312,7 @@ fn launch_app_with_cdp(app: &Path, platform: Platform, port: u16) -> Result<(), 
                 use std::os::windows::process::CommandExt;
                 const DETACHED_PROCESS: u32 = 0x0000_0008;
                 const CREATE_NEW_PROCESS_GROUP: u32 = 0x0000_0200;
+                clear_stdio_inheritance();
                 cmd.creation_flags(DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP);
             }
             cmd.spawn()
@@ -424,6 +443,7 @@ fn spawn_detached_daemon(
         use std::os::windows::process::CommandExt;
         const CREATE_NO_WINDOW: u32 = 0x0800_0000;
         const CREATE_NEW_PROCESS_GROUP: u32 = 0x0000_0200;
+        clear_stdio_inheritance();
         cmd.creation_flags(CREATE_NO_WINDOW | CREATE_NEW_PROCESS_GROUP);
     }
 

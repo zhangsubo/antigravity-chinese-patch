@@ -1,9 +1,9 @@
 # 验证记录
 
-## 2026-11-26 · Desktop 2.35.2 / agy-zh 3.0.5（Linux x64 桌面实测通过；macOS / Windows 待主人手工验收）
+## 2026-11-26 · Desktop 2.35.2 / agy-zh 3.0.5（Linux x64 与 Windows 11 x64 桌面实测通过；macOS 待主人手工验收）
 
 ### 1. 测试环境、包指纹与本地离线门禁
-- **分支 / 工作区**：`compat/antigravity-2.35.2-auto`（等待人工验收合并，未合并 `main`、未推送）。
+- **分支 / 工作区**：`main`（`3.0.5`）。
 - **目标发行版**：官方 **Antigravity Desktop `2.35.2-4585983447007232`**。
   - 跨平台 `resources/app.asar` SHA-256（Linux / macOS / Windows 三平台逐字节一致）：`e057115571cf5085406d20f2427a5afac272b712ec84332c7157da0113d4b2d0`
   - Linux x64 `Antigravity.tar.gz`：`2d33db282b1e9b3c7582c140dab9e86848f1b37a05bfa4a1dff7f44de1bf304f`；主程序 `antigravity`：`3ba9114b7fbaafaf548f72c5d1bc86b7dc81098a85361784359c2c1199625bfc`（Electron fuses `101100011`）
@@ -11,10 +11,10 @@
   - Windows x64 `Antigravity-x64.exe`：`1c66f68fa45e9ebc55aec5479617a9eeaa305ba8b16a1bee8327b8bad9d10258`；解包 `Antigravity.exe`：`baa56cfeb0f0934782b60fba2733313822cff5f48606d47c5a463a276f2ed138`（Electron fuses `101100011`）
   - 6 个目标 Electron 脚本 SHA-256 与 2.35.0 逐字节一致：`dist/preload.js`（`2973a6bfd3154fd20c58cbb6643dbf0a5e0cc4fd8a5894c4496f3db5c6231475`）、`dist/main.js`（`e4dd0d71d96f7fdcb5af5b86395cebac8d2367812604fa331429570a442fed69`）、`dist/tray.js`（`6c6b0968b45a1c7088e459657d57a9efd72d3733614349095f17b6ee94b47135`）、`dist/cablev2.js`（`9587de6e9ad895e6cccfee05f89cc094c3f3a789c86d62515ecf86bf05dbce33`）、`dist/menu.js`（`a6cde959efd16f0c99bdcb66d2228445bb7b2f00d0cb5a51aa1df6a8d933db13`）、`dist/updater.js`（`6f8dbba51f45894e06903f9a030ff6c292df6563573750fc1f777bed4238a429`）
 - **产物与离线测试**（`node tools/build-payloads.mjs` / `npm test` / `npm run build`）：
-  - 主词库：**2,337** 条精确词条 + **64** 条动态规则；Swarm 词库：**156** 条专用精确词条 + **11** 条规则；`bundleFingerprint: "3.0.5-b88cb76b87d9"`；内置 `payload_sha256`：`128ee86efbf0e40dc1524aaae8c5262fc8a06be06a065f2b46f0a5c470ed4eb5`。
-  - **JS DOM / Swarm / 漂移测试**：**43 / 43** 通过；**Rust 单测 (`cargo test`)**：**28 / 28** 通过（涵盖 3 平台 `is_native_ui_tested` 断言与 2.35.2 版本）。
+  - 主词库：**2,337** 条精确词条 + **64** 条动态规则；Swarm 词库：**156** 条专用精确词条 + **11** 条规则；`bundleFingerprint: "3.0.5-b88cb76b87d9"`；内置 `payload_sha256`：`c9a83a10499dbe85e35610c6d9ba04079ef70536a2090c91b63a85e35c2943ff`。
+  - **JS DOM / Swarm / 漂移测试**：**43 / 43** 通过；**Rust 单测 (`cargo test`)**：Linux **28 / 28** 通过、Windows 11 **29 / 29** 通过（涵盖 3 平台 `is_native_ui_tested` 断言、2.35.2 版本及 Windows 快捷方式/目录联接单测）。
   - **漂移检测 (`tools/drift-detector.mjs`)**：扫描 2.35.2 `app.asar`（`176` 文件 / `553` 候选 / `16` 精确命中 / `falsePositiveCount: 0`）与内嵌 Web UI `main.js`（`12,798,822` bytes / `7,756` 候选 / `1,175` 精确 + `1` 规则命中 / `falsePositiveCount: 0`）。
-  - **三平台解包 `agy-zh doctor --app ...`**：Linux（`native_ui_tested: true`）、macOS（`native_ui_tested: false`）、Windows（`native_ui_tested: false`）均报告 `version: "2.35.2"`、`compatibility_mode: "verified"`、`main_swarm_hook: true` 与 `12 core + 12 optional = 24` 锚点命中。
+  - **三平台 `agy-zh doctor`**：Linux（`native_ui_tested: true`）、Windows（`native_ui_tested: true`）、macOS（`native_ui_tested: false`）均报告 `version: "2.35.2"`、`compatibility_mode: "verified"`、`main_swarm_hook: true` 与 `12 core + 12 optional = 24` 锚点命中。
 
 ### 2. Linux x64 真实桌面实测结果（Instabox `box-856891` · Debian 13 x86_64 · XFCE · `DISPLAY=:1`）
 - **远程构建与单测**：在 `box-856891` 上同步补丁源码至 `/data/workspace/agy-login-2.32.2.g1d3Bn/patch`，执行 `npm ci --ignore-scripts`、`npm test`（43 JS + 28 Rust 全通过，退出码 `0`）与 `npm run build`（`agy-zh 3.0.5`，退出码 `0`）。
@@ -34,9 +34,22 @@
   - 日志：`npm-ci-2.35.2.log`、`tests-2.35.2.log`、`build-2.35.2.log`、`sha256-before.txt`、`static-install.log`、`static-app.log`、`static-toggle-and-guard.log`、`static-app-restart.log`、`static-restart-and-restore.log`、`dynamic-sha256-before.txt`、`dynamic-app.log`、`dynamic-run.log`、`dynamic-ui-verify.log`、`dynamic-stop-rerun.log`
   - 截图：`linux-2.35.2-static-zh-1.png`、`linux-2.35.2-static-en.png`、`linux-2.35.2-static-zh-2.png`、`linux-2.35.2-static-restart-zh.png`、`linux-2.35.2-dynamic-main-zh.png`、`linux-2.35.2-dynamic-main-en.png`、`linux-2.35.2-dynamic-settings-general-zh.png`、`linux-2.35.2-dynamic-settings-app-zh.png`、`linux-2.35.2-dynamic-final-zh.png`（已拉取至本地 `/tmp/ag-2.35.2-screenshots/` 并目视核验渲染清晰无排版破损）。
 
-### 3. macOS 与 Windows 平台状态（待主人手工测试验收）
+### 3. Windows 11 x64 真实桌面实测结果（Windows 11 Pro 26300 · 本机官方 `2.35.2`）
+- **本机编译与单测**：在非管理员、未开启开发者模式的 Windows 11 x64（`rustc 1.100.0 x86_64-pc-windows-gnu`、`Node v26.13.1`）执行 `npm ci --ignore-scripts`、`npm test`（**43** 项 JS + **29** 项 Rust 单测全通过，0 warning）与 `npm run build`（生成 `target\release\agy-zh.exe`，`1,913,344` bytes；`objdump -p` 确认仅依赖 Windows 系统 DLL，清空外部 `PATH` 可正常执行）。
+- **静态补丁全生命周期**（自动探测 `%LOCALAPPDATA%\Programs\Antigravity`）：
+  1. `agy-zh.exe doctor`（安装前，免 `--app`）：退出码 `0`，`platform: "win32"`、`version: "2.35.2"`、`compatibility_mode: "verified"`、`patched: false`、`main_swarm_hook: true` 与 24 条锚点命中；未传 `--trust-custom-translations` 加载自定义词表被安全拦截（退出码 `1`）。
+  2. `agy-zh.exe install`：退出码 `0`，`patched: true`，补丁后 `resources\app.asar` SHA-256 为 `093a987a64bece75eeb7530fd83d9888c04af492e33503ea29be9e6e8025d5c5`，生成备份 `Antigravity.zh-cn-original` 与 `Antigravity.zh-cn-state.json`。
+  3. 独立临时配置启动 `Antigravity.exe`：核验主界面悬浮球（`中文 · 开`、`v3.0.5 · 静态补丁`）、顶栏（`工作区 / 视图 / 窗口`）、侧栏（`新建对话 / 自动化 / 自定义配置 / 项目 / 设置`）、首页问候语与条款弹窗（`开始使用前的最后一步…` / `继续`）正常汉化，并完成点击切换英文（`中文 · 关`）与切回中文（`中文 · 开`）、右键配置菜单展开及运行期 `restore` 拦截（退出码 `1`）。注：本次静态模式快速切换期间懒加载的 Swarm 子帧未注入 `swarm-runtime`，Swarm 面板在动态 CDP 模式下完整验证。
+  4. 关闭后重启验证默认保持中文激活（`中文 · 开`）；完全退出且句柄释放后执行 `agy-zh.exe restore`（退出码 `0`，若退出后 1s 内句柄尚未完全释放可能短暂返回 `os error 5`，待进程句柄释放后重试即恢复），`resources\app.asar` 逐字节恢复为原版 SHA-256 `e057115571cf5085406d20f2427a5afac272b712ec84332c7157da0113d4b2d0`，`Antigravity.exe` 保持原版 `baa56cfeb0f0934782b60fba2733313822cff5f48606d47c5a463a276f2ed138`，备份与状态文件已清理。
+- **动态 CDP 守护模式、快捷方式与 Issue #1 回归**：
+  1. 未带调试端口运行客户端时执行 `agy-zh.exe run` 被拦截（退出码 `1`）。
+  2. 正常执行 `agy-zh.exe run`：修复 Windows 标准句柄继承泄漏后，PowerShell 管道捕获 `$raw = & .\target\release\agy-zh.exe run` 在 **3.28 秒**内立即返回（`status: "started"`）；`doctor` 确认 `patched: false`、`cdp_daemon_running: true`、`cdp_endpoint_reachable: true`、`native_ui_tested: true`；重复 `run` 返回 `status: "already_running"`。
+  3. 核验主界面（`v3.0.5 · CDP 动态`、顶栏、侧栏、首页问候语）、设置弹窗（`通用 / 应用 / 外观 / 快捷键 / 通知 / 模型 / 浏览器 / 对话 / 提交反馈`）与内置 Swarm 子帧（`plugin://swarm--swarm_board-*`：`version: "3.0.5"`、`概览 / 看板 / 成员 / 关系图 / 原始数据`、`蜂巢 / 提及 / 导出 GIF`）正常汉化并随悬浮球同步双向切换。
+  4. 客户端运行中执行 `agy-zh.exe stop`（退出码 `0`，`stopped: true`），`doctor` 立即确认 `cdp_daemon_running: false` 而客户端仍正常运行；执行 `agy-zh.exe run --port ...` 重新附着后关闭 `Antigravity.exe` 主窗口（存在 `language_server.exe` 进程），守护进程在 **6.86 秒**内自动退出并写入 `"status": "stopped"` 日志，全程无 `powershell.exe` 控制台弹窗回归（[#1](https://github.com/zhangsubo/antigravity-chinese-patch/issues/1) 验收通过）。
+  5. 执行 `agy-zh.exe shortcut`（沙盒目录）创建 `Antigravity 中文.lnk`（`WindowStyle: 7`，`IconLocation` 指向 `Antigravity.exe,0`）并执行 `--remove` 成功清理；最终原版 `app.asar` 保持 `e057115571cf5085406d20f2427a5afac272b712ec84332c7157da0113d4b2d0`。
+
+### 4. macOS 平台状态（待主人手工测试验收）
 - **macOS**：已完成官方 `2.35.2` 包指纹与离线 `agy-zh doctor` 校验；**未进行真机桌面实测**，`native_ui_tested_platforms` 不包含 `darwin`（`native_ui_tested: false`），待主人手工测试验收。
-- **Windows**：已完成官方 `2.35.2` 包指纹与离线 `agy-zh doctor` 校验；**未进行真机桌面实测**，`native_ui_tested_platforms` 不包含 `win32`（`native_ui_tested: false`），待主人手工测试验收。
 
 ## 2026-11-25 · Desktop 2.35.0 / agy-zh 3.0.4（Linux x64 桌面实测通过；macOS / Windows 待主人手工验收）
 

@@ -1064,9 +1064,18 @@ pub fn leave_app_dir_if_inside(app: &Path) {
     #[cfg(windows)]
     {
         if let (Ok(cwd), Ok(app_resolved)) = (env::current_dir(), fs::canonicalize(app)) {
-            let cwd_clean = strip_verbatim_prefix(&cwd);
-            let app_clean = strip_verbatim_prefix(&app_resolved);
-            if cwd_clean == app_clean || cwd_clean.starts_with(&app_clean) {
+            let cwd_canon = fs::canonicalize(&cwd).unwrap_or(cwd);
+            let cwd_clean = strip_verbatim_prefix(&cwd_canon)
+                .to_string_lossy()
+                .replace('\\', "/")
+                .to_lowercase();
+            let app_clean = strip_verbatim_prefix(&app_resolved)
+                .to_string_lossy()
+                .replace('\\', "/")
+                .to_lowercase();
+            let app_trimmed = app_clean.trim_end_matches('/');
+            let app_prefix = format!("{app_trimmed}/");
+            if cwd_clean == app_trimmed || cwd_clean.starts_with(&app_prefix) {
                 if let Some(parent) = app.parent() {
                     let _ = env::set_current_dir(parent);
                 }
@@ -1113,6 +1122,33 @@ impl Drop for TestTempDir {
 #[cfg(test)]
 pub(crate) fn canonical_temp_dir() -> (TestTempDir, PathBuf) {
     TestTempDir::new()
+}
+
+#[cfg(test)]
+pub(crate) fn create_test_dir_link(target: &Path, link: &Path) {
+    #[cfg(unix)]
+    {
+        std::os::unix::fs::symlink(target, link).unwrap();
+    }
+    #[cfg(windows)]
+    {
+        if std::os::windows::fs::symlink_dir(target, link).is_err() {
+            use std::os::windows::process::CommandExt;
+            const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+            let link_win = link.to_string_lossy().replace('/', "\\");
+            let target_win = target.to_string_lossy().replace('/', "\\");
+            let out = Command::new("cmd")
+                .args(["/c", "mklink", "/J", &link_win, &target_win])
+                .creation_flags(CREATE_NO_WINDOW)
+                .output()
+                .unwrap();
+            assert!(
+                out.status.success(),
+                "mklink /J failed: {}",
+                String::from_utf8_lossy(&out.stderr)
+            );
+        }
+    }
 }
 
 #[cfg(test)]
@@ -1171,14 +1207,22 @@ mod tests {
         fs::create_dir_all(&outside).unwrap();
         fs::write(outside.join("secret.txt"), b"secret").unwrap();
         let escape_link = app.join("resources/escape-link");
-        #[cfg(unix)]
-        std::os::unix::fs::symlink(&outside, &escape_link).unwrap();
-        #[cfg(windows)]
-        std::os::windows::fs::symlink_dir(&outside, &escape_link).unwrap();
+        create_test_dir_link(&outside, &escape_link);
 
         let err = assert_app_path(&app).unwrap_err();
         assert!(err.contains("symlink escaping"), "unexpected error: {err}");
-        fs::remove_file(&escape_link).or_else(|_| fs::remove_dir(&escape_link)).unwrap();
+        fs::remove_dir(&escape_link)
+            .or_else(|_| fs::remove_file(&escape_link))
+            .unwrap();
+
+        let internal_sub = app.join("resources/sub");
+        fs::create_dir_all(&internal_sub).unwrap();
+        let internal_link = app.join("resources/internal-link");
+        create_test_dir_link(&internal_sub, &internal_link);
+        assert!(assert_app_path(&app).is_ok());
+        fs::remove_dir(&internal_link)
+            .or_else(|_| fs::remove_file(&internal_link))
+            .unwrap();
 
         let running_linux = MockPsOps {
             stdout: format!("{}/antigravity --type=zygote\n", app.display()),

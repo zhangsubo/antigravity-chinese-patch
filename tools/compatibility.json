@@ -476,7 +476,7 @@
       "preload_sha256": "2973a6bfd3154fd20c58cbb6643dbf0a5e0cc4fd8a5894c4496f3db5c6231475",
       "entry": "dist/preload.js",
       "native_ui_tested": false,
-      "native_ui_tested_platforms": ["linux"],
+      "native_ui_tested_platforms": ["linux", "win32"],
       "main_swarm_hook": true,
       "text_patches": {
         "dist/preload.js": {

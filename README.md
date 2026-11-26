@@ -5,7 +5,7 @@
 
 适用于 **Google Antigravity（反重力）Desktop** 的双模简体中文本地化工具，提供 **Rust 零外部依赖单文件可执行程序 `agy-zh`**（macOS arm64 Release 实测约 **1.6 MB**，无需 Python 或 Node.js 运行环境），支持**零改包 CDP 动态守护**与**静态 ASAR 安全补丁**两种模式，以及跨窗口中英文实时切换、内置 Swarm 面板隔离汉化和原版无损还原。
 
-本项目由 **[张小璋 / zhangsubo](https://github.com/zhangsubo)** 开发维护，采用 MIT 许可证开源，为非 Google 官方的社区项目。当前已验证支持 **macOS、Linux 与 Windows 上的 Antigravity Desktop**（精确指纹支持 **2.22.0 / 2.23.0 / 2.29.1 / 2.31.2 / 2.32.1 / 2.32.2 / 2.33.0 / 2.33.1 / 2.34.0 / 2.35.0 / 2.35.2**，其中 `2.35.2` 已在 Linux x64 桌面实测验证，macOS 与 Windows 已核验 2.35.2 官方包指纹，桌面实测待完成；`2.33.1` 与 `2.34.0` 已在 macOS arm64 和 Linux x64 桌面验证。未收录新版本自动启用结构锚点弹性适配与零改包动态模式）。
+本项目由 **[张小璋 / zhangsubo](https://github.com/zhangsubo)** 开发维护，采用 MIT 许可证开源，为非 Google 官方的社区项目。当前已验证支持 **macOS、Linux 与 Windows 上的 Antigravity Desktop**（精确指纹支持 **2.22.0 / 2.23.0 / 2.29.1 / 2.31.2 / 2.32.1 / 2.32.2 / 2.33.0 / 2.33.1 / 2.34.0 / 2.35.0 / 2.35.2**，其中 `2.35.2` 已在 Linux x64 与 Windows 11 x64 桌面实测验证，macOS 已核验 2.35.2 官方包指纹、桌面实测待完成；`2.33.1` 与 `2.34.0` 已在 macOS arm64 和 Linux x64 桌面验证。未收录新版本自动启用结构锚点弹性适配与零改包动态模式）。
 
 **[仓库主页](https://github.com/zhangsubo/antigravity-chinese-patch) · [架构与双模对比](#architecture) · [安装与使用指南](#install) · [命令速查](#cli) · [自定义词表](#custom-dict) · [更新日志](CHANGELOG.md) · [问题反馈](https://github.com/zhangsubo/antigravity-chinese-patch/issues)**
 
@@ -118,7 +118,7 @@ flowchart TB
 | 项目 | 支持情况 |
 | --- | --- |
 | 工具版本 | 标准三段式 SemVer **`3.0.5`**（单文件 Rust 宿主 `agy-zh`） |
-| 已精确验证版本 | Google Antigravity Desktop **2.22.0 / 2.23.0 / 2.29.1 / 2.31.2 / 2.32.1 / 2.32.2 / 2.33.0 / 2.33.1 / 2.34.0 / 2.35.0 / 2.35.2**（Linux x64 实测至 **2.35.2**；macOS arm64 实测至 **2.34.0**、**2.35.0–2.35.2** 待手测；Windows x64 实测 **2.32.1**、**2.33.0–2.35.2** 待手测） |
+| 已精确验证版本 | Google Antigravity Desktop **2.22.0 / 2.23.0 / 2.29.1 / 2.31.2 / 2.32.1 / 2.32.2 / 2.33.0 / 2.33.1 / 2.34.0 / 2.35.0 / 2.35.2**（Linux x64 与 Windows 11 x64 实测至 **2.35.2**；macOS arm64 实测至 **2.34.0**、**2.35.0–2.35.2** 待手测） |
 | 未收录新版本 | 自动启用**结构锚点弹性注入**（静态模式）与 **CDP 动态守护**（动态模式） |
 | 操作系统与架构 | Apple Silicon Mac、Linux x86_64、Windows 11 x64 已实测；Intel Mac / Linux arm64 / Windows arm64 提供官方构建产物，欢迎实机反馈 |
 | 运行期依赖 | **零依赖**（单文件可执行程序 `agy-zh`，无需安装 Python 或 Node.js） |

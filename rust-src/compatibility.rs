@@ -382,7 +382,7 @@ mod tests {
         let v2352 = &m.verified_versions["2.35.2"];
         assert!(v2352.is_native_ui_tested(Platform::Linux));
         assert!(!v2352.is_native_ui_tested(Platform::Darwin));
-        assert!(!v2352.is_native_ui_tested(Platform::Win32));
+        assert!(v2352.is_native_ui_tested(Platform::Win32));
         assert_eq!(m.anchor_rules.entry, "dist/preload.js");
     }
 
