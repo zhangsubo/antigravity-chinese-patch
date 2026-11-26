@@ -22,6 +22,13 @@ tungstenite = { version = "0.24", default-features = false, features = ["handsha
 libc = "0.2"
 
 [target.'cfg(windows)'.dependencies]
+windows = { version = "0.58", features = [
+  "Win32_Foundation",
+  "Win32_Storage_FileSystem",
+  "Win32_System_Com",
+  "Win32_UI_Shell",
+  "Win32_UI_WindowsAndMessaging",
+] }
 windows-sys = { version = "0.59", features = [
   "Win32_Foundation",
   "Win32_Storage_FileSystem",

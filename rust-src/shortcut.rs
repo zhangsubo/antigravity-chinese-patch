@@ -1,6 +1,6 @@
 use crate::platform::{
-    default_app_path, home_dir, is_link, lexically_abs, run_checked, user_data_dir, user_log_file,
-    Platform, RealSystemOps, SystemOps,
+    default_app_path, home_dir, is_link, lexically_abs, run_checked, strip_verbatim_prefix,
+    user_data_dir, user_log_file, Platform, RealSystemOps, SystemOps,
 };
 use serde::Serialize;
 use std::env;
@@ -8,6 +8,21 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 const LAUNCHER_BUNDLE_ID: &str = "io.github.zhangsubo.antigravity-chinese-patch.launcher";
+const WINDOWS_SHORTCUT_NAME: &str = "Antigravity 中文.lnk";
+const WINDOWS_SHORTCUT_DESCRIPTION: &str = "Antigravity 中文 (CDP Dynamic Mode)";
+const WINDOWS_SHORTCUT_SHOW_MINNOACTIVE: i32 = 7;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WindowsShortcutSpec {
+    pub lnk_path: PathBuf,
+    pub target_path: PathBuf,
+    pub arguments: String,
+    pub working_directory: PathBuf,
+    pub icon_path: PathBuf,
+    pub icon_index: i32,
+    pub show_cmd: i32,
+    pub description: String,
+}
 
 #[derive(Debug, Clone, Serialize)]
 pub struct ShortcutReport {
@@ -41,8 +56,95 @@ pub fn desktop_exec_arg_quote(raw: &str) -> String {
     out
 }
 
-pub fn powershell_single_quote(raw: &str) -> String {
-    format!("'{}'", raw.replace('\'', "''"))
+pub fn format_windows_shortcut_args(app_path: &Path) -> String {
+    let clean = strip_verbatim_prefix(app_path);
+    let raw = clean.to_string_lossy();
+    let mut escaped = String::with_capacity(raw.len());
+    let mut pending_backslashes = 0usize;
+    for ch in raw.chars() {
+        match ch {
+            '\\' => {
+                pending_backslashes += 1;
+            }
+            '"' => {
+                for _ in 0..(pending_backslashes * 2 + 1) {
+                    escaped.push('\\');
+                }
+                escaped.push('"');
+                pending_backslashes = 0;
+            }
+            _ => {
+                for _ in 0..pending_backslashes {
+                    escaped.push('\\');
+                }
+                pending_backslashes = 0;
+                escaped.push(ch);
+            }
+        }
+    }
+    for _ in 0..(pending_backslashes * 2) {
+        escaped.push('\\');
+    }
+    format!("run --app \"{escaped}\"")
+}
+
+fn win_parent_dir(path: &Path) -> PathBuf {
+    #[cfg(windows)]
+    {
+        path.parent().map(Path::to_path_buf).unwrap_or_default()
+    }
+    #[cfg(not(windows))]
+    {
+        let raw = path.to_string_lossy();
+        if raw.contains('\\') {
+            let trimmed = raw.trim_end_matches(['\\', '/']);
+            match trimmed.rfind(['\\', '/']) {
+                Some(idx) if idx > 0 && trimmed.as_bytes()[idx - 1] == b':' => {
+                    PathBuf::from(&trimmed[..=idx])
+                }
+                Some(idx) => PathBuf::from(&trimmed[..idx]),
+                None => PathBuf::new(),
+            }
+        } else {
+            path.parent().map(Path::to_path_buf).unwrap_or_default()
+        }
+    }
+}
+
+fn win_join_file(dir: &Path, file: &str) -> PathBuf {
+    #[cfg(windows)]
+    {
+        dir.join(file)
+    }
+    #[cfg(not(windows))]
+    {
+        let raw = dir.to_string_lossy();
+        if raw.contains('\\') {
+            PathBuf::from(format!("{}\\{file}", raw.trim_end_matches(['\\', '/'])))
+        } else {
+            dir.join(file)
+        }
+    }
+}
+
+pub fn build_windows_shortcut_spec(
+    lnk_path: &Path,
+    bin_path: &Path,
+    app_path: &Path,
+) -> WindowsShortcutSpec {
+    let clean_lnk = strip_verbatim_prefix(lnk_path);
+    let clean_bin = strip_verbatim_prefix(bin_path);
+    let clean_app = strip_verbatim_prefix(app_path);
+    WindowsShortcutSpec {
+        lnk_path: clean_lnk,
+        working_directory: win_parent_dir(&clean_bin),
+        target_path: clean_bin,
+        arguments: format_windows_shortcut_args(&clean_app),
+        icon_path: win_join_file(&clean_app, "Antigravity.exe"),
+        icon_index: 0,
+        show_cmd: WINDOWS_SHORTCUT_SHOW_MINNOACTIVE,
+        description: WINDOWS_SHORTCUT_DESCRIPTION.to_string(),
+    }
 }
 
 pub fn render_macos_launcher_script(bin_path: &Path, app_path: &Path, log_path: &Path) -> String {
@@ -66,35 +168,6 @@ pub fn render_linux_desktop_entry(
     );
     format!(
         "[Desktop Entry]\nType=Application\nName=Antigravity 中文\nComment=Launch Google Antigravity Desktop with dynamic Simplified Chinese localization\nExec={exec_line}\nIcon={icon_value}\nTerminal=false\nCategories=Development;IDE;\nStartupNotify=true\n"
-    )
-}
-
-pub fn render_windows_shortcut_ps(
-    lnk_path: &Path,
-    bin_path: &Path,
-    app_path: &Path,
-) -> String {
-    let args = format!("run --app \"{}\"", app_path.to_string_lossy().replace('"', "`\""));
-    format!(
-        "$WshShell = New-Object -ComObject WScript.Shell; \
-         $Shortcut = $WshShell.CreateShortcut({}); \
-         $Shortcut.TargetPath = {}; \
-         $Shortcut.Arguments = {}; \
-         $Shortcut.WorkingDirectory = {}; \
-         $Shortcut.IconLocation = {}; \
-         $Shortcut.WindowStyle = 7; \
-         $Shortcut.Description = 'Antigravity 中文 (CDP Dynamic Mode)'; \
-         $Shortcut.Save()",
-        powershell_single_quote(&lnk_path.to_string_lossy()),
-        powershell_single_quote(&bin_path.to_string_lossy()),
-        powershell_single_quote(&args),
-        powershell_single_quote(
-            &bin_path
-                .parent()
-                .map(|p| p.to_string_lossy().into_owned())
-                .unwrap_or_default()
-        ),
-        powershell_single_quote(&format!("{},0", app_path.join("Antigravity.exe").to_string_lossy())),
     )
 }
 
@@ -187,7 +260,7 @@ pub fn manage_shortcut_with(
     match platform {
         Platform::Darwin => manage_macos_shortcut(&app_path, &out_dir, &resolved_bin_dir, remove, ops),
         Platform::Linux => manage_linux_shortcut(&app_path, &out_dir, &resolved_bin_dir, remove),
-        Platform::Win32 => manage_windows_shortcut(&app_path, &out_dir, &resolved_bin_dir, remove, ops),
+        Platform::Win32 => manage_windows_shortcut(&app_path, &out_dir, &resolved_bin_dir, remove),
     }
 }
 
@@ -360,9 +433,8 @@ fn manage_windows_shortcut(
     out_dir: &Path,
     bin_dir: &Path,
     remove: bool,
-    ops: &dyn SystemOps,
 ) -> Result<ShortcutReport, String> {
-    let lnk = out_dir.join("Antigravity 中文.lnk");
+    let lnk = out_dir.join(WINDOWS_SHORTCUT_NAME);
     if remove {
         if lnk.exists() || is_link(&lnk) {
             fs::remove_file(&lnk)
@@ -380,20 +452,184 @@ fn manage_windows_shortcut(
     fs::create_dir_all(out_dir)
         .map_err(|e| format!("Failed to create {}: {e}", out_dir.display()))?;
     let stable_bin = install_stable_binary_in(bin_dir)?;
-    let ps = render_windows_shortcut_ps(&lnk, &stable_bin, app_path);
-    run_checked(
-        ops,
-        "powershell",
-        &["-NoProfile", "-NonInteractive", "-Command", &ps],
-    )?;
+    let spec = build_windows_shortcut_spec(&lnk, &stable_bin, app_path);
+    #[cfg(target_os = "windows")]
+    {
+        win_shortcut::create_shortcut(&spec)?;
+        Ok(ShortcutReport {
+            action: "created".to_string(),
+            platform: "win32".to_string(),
+            path: lnk.to_string_lossy().into_owned(),
+            stable_binary: Some(stable_bin.to_string_lossy().into_owned()),
+            app: Some(app_path.to_string_lossy().into_owned()),
+        })
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = &spec;
+        Err("Windows shortcuts can only be created on Windows".to_string())
+    }
+}
 
-    Ok(ShortcutReport {
-        action: "created".to_string(),
-        platform: "win32".to_string(),
-        path: lnk.to_string_lossy().into_owned(),
-        stable_binary: Some(stable_bin.to_string_lossy().into_owned()),
-        app: Some(app_path.to_string_lossy().into_owned()),
-    })
+#[cfg(target_os = "windows")]
+mod win_shortcut {
+    use super::WindowsShortcutSpec;
+    use std::ffi::{OsStr, OsString};
+    use std::os::windows::ffi::{OsStrExt, OsStringExt};
+    use std::path::{Path, PathBuf};
+    use windows::core::{Interface, PCWSTR};
+    use windows::Win32::Foundation::RPC_E_CHANGED_MODE;
+    #[cfg(test)]
+    use windows::Win32::System::Com::STGM_READ;
+    use windows::Win32::System::Com::{
+        CoCreateInstance, CoInitializeEx, CoUninitialize, IPersistFile, CLSCTX_INPROC_SERVER,
+        COINIT_APARTMENTTHREADED,
+    };
+    use windows::Win32::UI::Shell::{IShellLinkW, ShellLink};
+    use windows::Win32::UI::WindowsAndMessaging::SHOW_WINDOW_CMD;
+
+    struct ComGuard {
+        should_uninit: bool,
+    }
+
+    impl ComGuard {
+        fn init() -> Result<Self, String> {
+            let hr = unsafe { CoInitializeEx(None, COINIT_APARTMENTTHREADED) };
+            if hr.is_ok() {
+                Ok(Self {
+                    should_uninit: true,
+                })
+            } else if hr == RPC_E_CHANGED_MODE {
+                Ok(Self {
+                    should_uninit: false,
+                })
+            } else {
+                Err(format!("Failed to initialize COM: {hr:?}"))
+            }
+        }
+    }
+
+    impl Drop for ComGuard {
+        fn drop(&mut self) {
+            if self.should_uninit {
+                unsafe { CoUninitialize() };
+            }
+        }
+    }
+
+    fn to_wide_null(os: &OsStr) -> Vec<u16> {
+        os.encode_wide().chain(std::iter::once(0)).collect()
+    }
+
+    fn str_to_wide_null(s: &str) -> Vec<u16> {
+        s.encode_utf16().chain(std::iter::once(0)).collect()
+    }
+
+    #[cfg(test)]
+    fn from_wide_null(buf: &[u16]) -> String {
+        let len = buf.iter().position(|&c| c == 0).unwrap_or(buf.len());
+        OsString::from_wide(&buf[..len])
+            .to_string_lossy()
+            .into_owned()
+    }
+
+    pub fn create_shortcut(spec: &WindowsShortcutSpec) -> Result<(), String> {
+        let _com = ComGuard::init()?;
+        unsafe {
+            let link: IShellLinkW = CoCreateInstance(&ShellLink, None, CLSCTX_INPROC_SERVER)
+                .map_err(|e| format!("Failed to create IShellLinkW: {e}"))?;
+
+            let target_w = to_wide_null(spec.target_path.as_os_str());
+            link.SetPath(PCWSTR(target_w.as_ptr()))
+                .map_err(|e| format!("Failed to set shortcut target path: {e}"))?;
+
+            let args_w = str_to_wide_null(&spec.arguments);
+            link.SetArguments(PCWSTR(args_w.as_ptr()))
+                .map_err(|e| format!("Failed to set shortcut arguments: {e}"))?;
+
+            let workdir_w = to_wide_null(spec.working_directory.as_os_str());
+            link.SetWorkingDirectory(PCWSTR(workdir_w.as_ptr()))
+                .map_err(|e| format!("Failed to set shortcut working directory: {e}"))?;
+
+            let icon_w = to_wide_null(spec.icon_path.as_os_str());
+            link.SetIconLocation(PCWSTR(icon_w.as_ptr()), spec.icon_index)
+                .map_err(|e| format!("Failed to set shortcut icon location: {e}"))?;
+
+            link.SetShowCmd(SHOW_WINDOW_CMD(spec.show_cmd))
+                .map_err(|e| format!("Failed to set shortcut show command: {e}"))?;
+
+            let desc_w = str_to_wide_null(&spec.description);
+            link.SetDescription(PCWSTR(desc_w.as_ptr()))
+                .map_err(|e| format!("Failed to set shortcut description: {e}"))?;
+
+            let persist: IPersistFile = link
+                .cast()
+                .map_err(|e| format!("Failed to query IPersistFile: {e}"))?;
+            let lnk_w = to_wide_null(spec.lnk_path.as_os_str());
+            persist
+                .Save(PCWSTR(lnk_w.as_ptr()), true)
+                .map_err(|e| format!("Failed to save shortcut {}: {e}", spec.lnk_path.display()))?;
+        }
+        Ok(())
+    }
+
+    #[cfg(test)]
+    pub fn read_shortcut(lnk_path: &Path) -> Result<WindowsShortcutSpec, String> {
+        let _com = ComGuard::init()?;
+        unsafe {
+            let link: IShellLinkW = CoCreateInstance(&ShellLink, None, CLSCTX_INPROC_SERVER)
+                .map_err(|e| format!("Failed to create IShellLinkW: {e}"))?;
+            let persist: IPersistFile = link
+                .cast()
+                .map_err(|e| format!("Failed to query IPersistFile: {e}"))?;
+            let lnk_w = to_wide_null(lnk_path.as_os_str());
+            persist
+                .Load(PCWSTR(lnk_w.as_ptr()), STGM_READ)
+                .map_err(|e| format!("Failed to load shortcut {}: {e}", lnk_path.display()))?;
+
+            let mut buf = [0u16; 1024];
+            link.GetPath(&mut buf, std::ptr::null_mut(), 0)
+                .map_err(|e| format!("Failed to read shortcut target path: {e}"))?;
+            let target_path = PathBuf::from(from_wide_null(&buf));
+
+            buf.fill(0);
+            link.GetArguments(&mut buf)
+                .map_err(|e| format!("Failed to read shortcut arguments: {e}"))?;
+            let arguments = from_wide_null(&buf);
+
+            buf.fill(0);
+            link.GetWorkingDirectory(&mut buf)
+                .map_err(|e| format!("Failed to read shortcut working directory: {e}"))?;
+            let working_directory = PathBuf::from(from_wide_null(&buf));
+
+            buf.fill(0);
+            let mut icon_index = 0i32;
+            link.GetIconLocation(&mut buf, &mut icon_index)
+                .map_err(|e| format!("Failed to read shortcut icon location: {e}"))?;
+            let icon_path = PathBuf::from(from_wide_null(&buf));
+
+            let show_cmd = link
+                .GetShowCmd()
+                .map_err(|e| format!("Failed to read shortcut show command: {e}"))?
+                .0;
+
+            buf.fill(0);
+            link.GetDescription(&mut buf)
+                .map_err(|e| format!("Failed to read shortcut description: {e}"))?;
+            let description = from_wide_null(&buf);
+
+            Ok(WindowsShortcutSpec {
+                lnk_path: lnk_path.to_path_buf(),
+                target_path,
+                arguments,
+                working_directory,
+                icon_path,
+                icon_index,
+                show_cmd,
+                description,
+            })
+        }
+    }
 }
 
 #[cfg(test)]
@@ -441,13 +677,31 @@ mod tests {
         );
         assert!(desktop.contains(r#"Exec="/usr/local/bin/agy-zh" run --app "/opt/App \"\$USER\" \`id\`""#));
 
-        let ps = render_windows_shortcut_ps(
-            Path::new(r"C:\Users\o'neil\Desktop\Antigravity 中文.lnk"),
-            Path::new(r"C:\Users\o'neil\bin\agy-zh.exe"),
-            Path::new(r"C:\Program Files\O'Neil\Antigravity"),
+        let spec = build_windows_shortcut_spec(
+            Path::new(r"\\?\C:\Users\o'neil\Desktop\桌面测试\Antigravity 中文.lnk"),
+            Path::new(r"\\?\C:\Users\o'neil\bin\agy-zh.exe"),
+            Path::new(r"\\?\C:\Program Files\O'Neil 测试\Antigravity\"),
         );
-        assert!(ps.contains(r"'C:\Users\o''neil\Desktop\Antigravity 中文.lnk'"));
-        assert!(ps.contains(r#"'run --app "C:\Program Files\O''Neil\Antigravity"'"#));
+        assert_eq!(
+            spec.lnk_path,
+            Path::new(r"C:\Users\o'neil\Desktop\桌面测试\Antigravity 中文.lnk")
+        );
+        assert_eq!(spec.target_path, Path::new(r"C:\Users\o'neil\bin\agy-zh.exe"));
+        assert_eq!(
+            spec.working_directory,
+            Path::new(r"C:\Users\o'neil\bin")
+        );
+        assert_eq!(
+            spec.arguments,
+            r#"run --app "C:\Program Files\O'Neil 测试\Antigravity\\""#
+        );
+        assert_eq!(
+            spec.icon_path,
+            Path::new(r"C:\Program Files\O'Neil 测试\Antigravity\Antigravity.exe")
+        );
+        assert_eq!(spec.icon_index, 0);
+        assert_eq!(spec.show_cmd, 7);
+        assert_eq!(spec.description, WINDOWS_SHORTCUT_DESCRIPTION);
     }
 
     #[cfg(target_os = "macos")]
@@ -489,18 +743,17 @@ mod tests {
     #[test]
     fn windows_shortcut_create_and_remove_in_sandbox() {
         let (_tmp, root) = canonical_temp_dir();
-        let fake_app = root.join("Antigravity");
+        let fake_app = root.join("Antigravity 测试");
         fs::create_dir_all(&fake_app).unwrap();
         fs::write(fake_app.join("Antigravity.exe"), b"MZ").unwrap();
-        let out_dir = root.join("OutDesktop");
+        let out_dir = root.join("桌面测试");
         let bin_dir = root.join("bin");
 
-        let ops = RealSystemOps;
-        let created = manage_windows_shortcut(&fake_app, &out_dir, &bin_dir, false, &ops).unwrap();
+        let created = manage_windows_shortcut(&fake_app, &out_dir, &bin_dir, false).unwrap();
         assert_eq!(created.action, "created");
         assert_eq!(created.platform, "win32");
 
-        let lnk = out_dir.join("Antigravity 中文.lnk");
+        let lnk = out_dir.join(WINDOWS_SHORTCUT_NAME);
         let stable_bin = bin_dir.join("agy-zh.exe");
         assert!(lnk.is_file(), "expected shortcut at {}", lnk.display());
         assert!(
@@ -509,35 +762,27 @@ mod tests {
             stable_bin.display()
         );
 
-        let inspect_ps = format!(
-            "$ws = New-Object -ComObject WScript.Shell; \
-             $sc = $ws.CreateShortcut({}); \
-             [PSCustomObject]@{{ TargetPath=$sc.TargetPath; Arguments=$sc.Arguments; WindowStyle=$sc.WindowStyle; IconLocation=$sc.IconLocation }} | ConvertTo-Json -Compress",
-            powershell_single_quote(&lnk.to_string_lossy())
-        );
-        let out = run_checked(
-            &ops,
-            "powershell",
-            &["-NoProfile", "-NonInteractive", "-Command", &inspect_ps],
-        )
-        .unwrap();
-        let parsed: serde_json::Value = serde_json::from_str(out.stdout.trim()).unwrap();
+        let read_back = win_shortcut::read_shortcut(&lnk).unwrap();
         assert_eq!(
-            parsed["TargetPath"].as_str().unwrap().to_lowercase(),
+            read_back.target_path.to_string_lossy().to_lowercase(),
             stable_bin.to_string_lossy().to_lowercase()
         );
-        assert!(parsed["Arguments"]
-            .as_str()
-            .unwrap()
+        assert!(read_back
+            .arguments
             .contains(&fake_app.to_string_lossy().to_string()));
-        assert_eq!(parsed["WindowStyle"].as_i64(), Some(7));
-        assert!(parsed["IconLocation"]
-            .as_str()
-            .unwrap()
-            .to_lowercase()
-            .contains("antigravity.exe,0"));
+        assert_eq!(
+            read_back.working_directory.to_string_lossy().to_lowercase(),
+            bin_dir.to_string_lossy().to_lowercase()
+        );
+        assert_eq!(
+            read_back.icon_path.to_string_lossy().to_lowercase(),
+            fake_app.join("Antigravity.exe").to_string_lossy().to_lowercase()
+        );
+        assert_eq!(read_back.icon_index, 0);
+        assert_eq!(read_back.show_cmd, 7);
+        assert_eq!(read_back.description, WINDOWS_SHORTCUT_DESCRIPTION);
 
-        let removed = manage_windows_shortcut(&fake_app, &out_dir, &bin_dir, true, &ops).unwrap();
+        let removed = manage_windows_shortcut(&fake_app, &out_dir, &bin_dir, true).unwrap();
         assert_eq!(removed.action, "removed");
         assert!(!lnk.exists());
     }
