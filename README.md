@@ -160,9 +160,40 @@ flowchart TB
 
 ## 安装与使用指南
 
-### 1. 获取单文件程序 `agy-zh`
+### 1. 获取并管理 `agy-zh`
 
-- **方式 A（推荐）：下载预编译单文件二进制**
+- **方式 A（推荐）：一键安装与维护脚本（自动安装/更新、`agy-zh-*` 本地迁移重命名、一键 CDP/ASAR、状态与卸载）**
+  - **macOS / Linux**：
+    - 在线一键安装（自动校验 `SHA256SUMS.txt`，默认安装到 `~/.local/bin/agy-zh` 与 `~/.local/bin/agy-zh-manage` 并写入 `PATH`）：
+      ```bash
+      curl -fsSL https://github.com/zhangsubo/antigravity-chinese-patch/releases/latest/download/agy-zh-manage.sh | bash
+      ```
+    - 或从 [GitHub Releases](https://github.com/zhangsubo/antigravity-chinese-patch/releases) 下载 `agy-zh-manage.sh`（可与 `agy-zh-*` 放在同一目录直接运行，脚本会自动识别并迁移重命名为 `agy-zh`）：
+      ```bash
+      bash agy-zh-manage.sh
+      # 常用快捷命令（安装后可直接运行 agy-zh-manage）：
+      # agy-zh-manage --mode cdp                        # 一键部署 CDP 动态汉化与快捷方式
+      # agy-zh-manage --mode asar                       # 一键安装静态 ASAR 补丁
+      # agy-zh-manage --install-dir ~/my-bin --from ./agy-zh-macos-arm64 --delete-source
+      # agy-zh-manage --update                          # 更新 agy-zh 并自动刷新已有快捷方式
+      # agy-zh-manage --mirror https://your-mirror      # 配置并记住下载加速镜像（none 清除）
+      # agy-zh-manage --status / --logs / --uninstall   # 查看状态、日志或彻底卸载
+      ```
+  - **Windows (PowerShell / CMD)**：
+    - 在线一键安装（默认安装到 `%LOCALAPPDATA%\Programs\agy-zh`，自动写入用户 `PATH`）：
+      ```powershell
+      irm https://github.com/zhangsubo/antigravity-chinese-patch/releases/latest/download/agy-zh-manage.ps1 | iex
+      ```
+    - 或从 [GitHub Releases](https://github.com/zhangsubo/antigravity-chinese-patch/releases) 下载 `agy-zh-manage.ps1` 与 `agy-zh-manage.cmd`（同目录有 `agy-zh-windows-*.exe` 时会自动提示迁移并重命名为 `agy-zh.exe`），直接双击 `agy-zh-manage.cmd` 打开中文维护菜单，或在终端执行：
+      ```powershell
+      .\agy-zh-manage.cmd -Mode cdp
+      .\agy-zh-manage.cmd -InstallDir "D:\Tools\agy-zh" -From ".\agy-zh-windows-x64.exe" -DeleteSource
+      .\agy-zh-manage.cmd -Update
+      .\agy-zh-manage.cmd -Status
+      .\agy-zh-manage.cmd -Uninstall
+      ```
+
+- **方式 B：手动下载预编译单文件二进制**
   从 [GitHub Releases](https://github.com/zhangsubo/antigravity-chinese-patch/releases) 下载对应平台产物（可结合 `SHA256SUMS.txt` 校验 SHA-256）：
   - macOS Apple Silicon：`agy-zh-macos-arm64`
   - macOS Intel：`agy-zh-macos-x64`
@@ -181,7 +212,7 @@ flowchart TB
     Rename-Item .\agy-zh-windows-x64.exe agy-zh.exe
     ```
 
-- **方式 B：从源码编译**
+- **方式 C：从源码编译**
   需 Node.js **20+** 与 Rust **1.80+**：
   ```bash
   git clone https://github.com/zhangsubo/antigravity-chinese-patch.git

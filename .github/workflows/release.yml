@@ -122,6 +122,9 @@ jobs:
 
           mkdir -p release-assets
           find downloaded-assets -type f -exec cp {} release-assets/ \;
+          cp scripts/agy-zh-manage.sh release-assets/agy-zh-manage.sh
+          cp scripts/agy-zh-manage.ps1 release-assets/agy-zh-manage.ps1
+          cp scripts/agy-zh-manage.cmd release-assets/agy-zh-manage.cmd
           SRC_ZIP="antigravity-chinese-patch-${TAG}-src.zip"
           git archive --format=zip --prefix="antigravity-chinese-patch-${TAG}/" HEAD -o "release-assets/${SRC_ZIP}"
 
@@ -164,7 +167,16 @@ jobs:
             '',
             '## 快速使用',
             '',
-            `1. 在下方 **Assets** 下载对应平台的 \`agy-zh-*\` 单文件二进制（可通过 \`SHA256SUMS.txt\` 校验完整性）：`,
+            `1. **一键安装与维护脚本（推荐）**：`,
+            `   - macOS / Linux（默认安装至 \`~/.local/bin\`，自动加入 \`PATH\`，支持迁移本地 \`agy-zh-*\`、一键部署 CDP / ASAR、状态诊断与自动更新）：`,
+            '     ```bash',
+            `     curl -fsSL https://github.com/${repo}/releases/download/${tag}/agy-zh-manage.sh | bash`,
+            '     ```',
+            '   - Windows（默认安装至 `%LOCALAPPDATA%\\Programs\\agy-zh`，可下载 `agy-zh-manage.ps1` + `agy-zh-manage.cmd` 双击运行或在线执行）：',
+            '     ```powershell',
+            `     irm https://github.com/${repo}/releases/download/${tag}/agy-zh-manage.ps1 | iex`,
+            '     ```',
+            `2. 或在下方 **Assets** 手动下载对应平台的 \`agy-zh-*\` 单文件二进制（可通过 \`SHA256SUMS.txt\` 校验完整性）：`,
             '   - macOS Apple Silicon: `agy-zh-macos-arm64`',
             '   - macOS Intel: `agy-zh-macos-x64`',
             '   - Linux x64 / ARM64: `agy-zh-linux-x64` / `agy-zh-linux-arm64`',
