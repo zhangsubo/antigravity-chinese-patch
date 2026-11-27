@@ -271,5 +271,22 @@
   "Your administrator has disabled MCP servers for this workspace.": "管理员已在此工作区禁用 MCP 服务器。",
   "to be installed.": "。",
   "to be installed. The browser subagent can be invoked by typing /browser in the conversation input box.": "。在对话输入框中输入 /browser 可调用浏览器子智能体。",
-  "~/.ssh/config (default)": "~/.ssh/config（默认）"
+  "~/.ssh/config (default)": "~/.ssh/config（默认）",
+  "Add your API key or configuration to use this plugin.": "添加你的 API 密钥或配置以使用此插件。",
+  "Bundle installation is not available.": "套装安装不可用。",
+  "Bundle membership updates are not available.": "套装成员更新不可用。",
+  "Cloud automation": "云端自动化",
+  "Cloud trigger": "云端触发器",
+  "Configuration saved.": "配置已保存。",
+  "Couldn't load plugin configuration.": "无法加载插件配置。",
+  "Disabled by your organization": "已被你的组织禁用",
+  "Failed to save configuration.": "保存配置失败。",
+  "Org recommended": "组织推荐",
+  "Org required": "组织必需",
+  "Plugin installation is not available.": "插件安装不可用。",
+  "Plugin removal is not available.": "插件卸载不可用。",
+  "Plugins are disabled by your organization.": "你的组织已禁用插件。",
+  "Plugins are unavailable until your organization's policy loads.": "在组织策略加载完成前，插件暂不可用。",
+  "Required by your organization": "由你的组织强制启用",
+  "The plugin marketplace is disabled by your organization.": "你的组织已禁用插件市场。"
 }

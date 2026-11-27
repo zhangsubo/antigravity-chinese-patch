@@ -477,6 +477,43 @@ export function createScanner(translator, options = {}) {
         if (lead && originalText(lead) === 'Answered:') translateTree(lead);
       }
     }
+    for (const el of document.querySelectorAll(
+      '[data-testid="chat-composer-attachments-disabled-notice"],[data-testid="chat-composer-error"],' +
+      '[data-testid="chat-composer-retry"],[data-testid="session-card-delivery-error"],' +
+      '[data-testid="session-card-retry"]'
+    )) {
+      translateTree(el);
+      translateAttrs(el);
+    }
+    for (const trigger of document.querySelectorAll('[data-testid="aux-pane-floating-composer-trigger"]')) {
+      for (const span of trigger.querySelectorAll('span')) {
+        if (span.children.length === 0 && originalText(span) === 'Ask anything') {
+          translateTree(span);
+        }
+      }
+      for (const badge of trigger.querySelectorAll(
+        '[data-testid="aux-pane-floating-composer-comment-badge"],[data-testid="aux-pane-floating-composer-attachment-badge"]'
+      )) {
+        translateTree(badge);
+      }
+    }
+    for (const searchBar of document.querySelectorAll('[data-testid="agent-remote-session-search"]')) {
+      for (const inp of searchBar.querySelectorAll('[data-testid="agent-remote-session-search-input"]')) {
+        translatePlaceholder(inp);
+        translateAttrs(inp);
+      }
+      for (const el of searchBar.querySelectorAll(
+        '[data-testid="agent-remote-session-search-clear"],[data-testid="agent-remote-session-search-close"],' +
+        '[data-testid="agent-remote-session-search-prev"],[data-testid="agent-remote-session-search-next"],' +
+        '[data-testid="agent-remote-session-search-count"],[data-testid="agent-remote-session-search-retry"],' +
+        '[data-testid="agent-remote-session-search-empty"],[data-testid="agent-remote-session-search-error"],' +
+        '[data-testid="agent-remote-session-search-loading"],[data-testid="agent-remote-session-search-older-banner"],' +
+        '[data-testid="agent-remote-session-search-load-more"],[data-testid="agent-remote-session-search-load-older"]'
+      )) {
+        translateTree(el);
+        translateAttrs(el);
+      }
+    }
   }
 
   function scanPopupsAndOverview() {
@@ -488,7 +525,7 @@ export function createScanner(translator, options = {}) {
         translateAttrs(sub);
       }
     }
-    for (const panel of document.querySelectorAll('[data-testid="overview-panel"]')) {
+    for (const panel of document.querySelectorAll('[data-testid="overview-panel"],[data-testid="overview-panel-overview-card"]')) {
       for (const el of panel.querySelectorAll('span,button,div')) {
         if (el.children.length === 0 && overviewSafeTexts.has(originalText(el))) {
           translateTree(el);
@@ -623,7 +660,10 @@ export function createScanner(translator, options = {}) {
     for (const el of document.querySelectorAll(
       '[data-testid="bundles-page"],[data-testid="bundle-detail"],[data-testid="marketplace-bundles-banner"],' +
       '[data-testid="marketplace-filter-button"],[data-testid="marketplace-filter-menu"],' +
-      '[data-testid="marketplace-ranking-label"],[data-testid="customization-new-badge"]'
+      '[data-testid="marketplace-ranking-label"],[data-testid="customization-new-badge"],' +
+      '[data-testid="marketplace-invitation"],[data-testid="plugin-controls-note"],' +
+      '[data-testid="plugin-detail-blocked"],[data-testid="plugin-detail-controls-note"],' +
+      '[data-testid="remote-plugin-configure"],[data-testid="customizations-action-error"]'
     )) {
       translateTree(el);
       for (const attrEl of el.querySelectorAll('[aria-label],[title]')) translateAttrs(attrEl);
@@ -663,7 +703,7 @@ export function createScanner(translator, options = {}) {
       '[data-testid="post-onboarding-terms-body"],[data-testid="post-onboarding-welcome-modal"],' +
       '[data-testid="customize-sidebar-modal"],[data-testid="vcs-commit-message"],' +
       '[data-testid="confirm-move-conversation-project"],[data-testid="plugin-permission-revoke-all-modal"],' +
-      '[data-testid="dictation-languages-popover"]'
+      '[data-testid="dictation-languages-popover"],[data-testid="credential-modal"],[data-testid="delete-credential-modal"]'
     )) {
       const dialog = marker.closest('[role="dialog"],[role="group"]');
       if (dialog) {
@@ -678,11 +718,19 @@ export function createScanner(translator, options = {}) {
     }
     for (const el of document.querySelectorAll(
       '[data-testid="plugin-permissions-allowed"],[data-testid="plugin-permissions-included"],' +
-      '[data-testid="plugin-theme-apply"],[data-testid="plugin-detail-added-badge"]'
+      '[data-testid="plugin-theme-apply"],[data-testid="plugin-detail-added-badge"],' +
+      '[data-testid="credentials-error-banner"],[data-testid="rc-qr-loading-placeholder"]'
     )) {
       translateTree(el);
       for (const sub of el.querySelectorAll('[aria-label],[title]')) translateAttrs(sub);
       translateAttrs(el);
+    }
+    for (const card of document.querySelectorAll('[data-testid="chat-credential-card"]')) {
+      for (const el of card.querySelectorAll(
+        '[data-testid="chat-credential-card-scope"],[data-testid="chat-credential-card-action"]'
+      )) {
+        translateTree(el);
+      }
     }
     for (const el of document.querySelectorAll(
       '[data-testid="selection-quote-button"],[data-testid="selection-btw-button"],' +
@@ -844,6 +892,55 @@ export function createScanner(translator, options = {}) {
     }
   }
 
+  const feedSafeTexts = new Set([
+    'All', 'Needs you', 'Working', 'Unread', 'Done', 'Earlier',
+    'Waiting on you', 'In progress', 'Ready to review', 'Ready for your review.',
+    'Ready for your review and sign-off.', 'Waiting for your input', 'Deliverable',
+    'Deliverable ready to review.', 'Document created and ready to review.', 'Doc reviewed',
+    'Published site ready to view.', 'Mark done', 'Marked done', 'Open conversation',
+    'Open doc', 'Open link', 'Open thread', 'Open parent', 'Open parent conversation',
+    'Inspect', 'Respond', 'Review details', 'Needs permission to continue.',
+    'Question waiting', 'Subagent needs approval',
+    'Subagent is blocked and needs your decision.',
+    'Subagent stopped with an error before finishing.',
+    'Scheduled run', 'Scheduled run finished.', 'Scheduled run is waiting for your input.',
+    'Scheduled automation is running now.', 'Comment on plan',
+    'Expand full view', 'Back to split view', 'Close details',
+  ]);
+
+  function scanFeeds() {
+    for (const view of document.querySelectorAll('[data-testid="feeds-view"]')) {
+      for (const h1 of view.querySelectorAll('header h1')) translateTree(h1);
+      for (const btn of view.querySelectorAll('header button')) translateTree(btn);
+      for (const filterGroup of view.querySelectorAll('[role="group"][aria-label="Filter feed"]')) {
+        translateAttrs(filterGroup);
+        for (const btn of filterGroup.querySelectorAll('button')) translateTree(btn);
+      }
+      for (const caughtUp of view.querySelectorAll('[data-testid="feed-caught-up"]')) {
+        translateTree(caughtUp);
+      }
+      for (const el of view.querySelectorAll(
+        '[data-testid="feed-card-comment-on-plan"],[data-testid="feed-details-expand"],' +
+        '[data-testid="feed-details-comment-on-plan"],[data-testid="feed-details-resize-handle"]'
+      )) {
+        translateTree(el);
+        translateAttrs(el);
+      }
+      for (const reply of view.querySelectorAll('[data-testid="feed-reply"],[data-testid="feed-reply-placeholder"]')) {
+        translateTree(reply);
+        for (const inp of reply.querySelectorAll('textarea,input')) translatePlaceholder(inp);
+        for (const btn of reply.querySelectorAll('[aria-label],[title]')) translateAttrs(btn);
+      }
+      for (const el of view.querySelectorAll('[data-testid="feed-card"] span, [data-testid="feed-card"] button, [data-testid="feed-details"] span, [data-testid="feed-details"] button')) {
+        const text = el.children.length === 0 ? originalText(el) : '';
+        if (text && (feedSafeTexts.has(text) || /^\d+ (?:reply|replies)$/.test(text))) {
+          translateTree(el);
+        }
+        translateAttrs(el);
+      }
+    }
+  }
+
   const scanners = [
     scanSettings,
     scanVoicePicker,
@@ -855,6 +952,7 @@ export function createScanner(translator, options = {}) {
     scanCustomizationsAndHistory,
     scanDialogsAndWizards,
     scanMultiAgentAndMenuBar,
+    scanFeeds,
   ];
 
   function observe() {

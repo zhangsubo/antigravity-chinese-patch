@@ -1,5 +1,14 @@
 # 更新日志
 
+## [3.0.7] - 2026-11-28
+
+- 新增 Antigravity Desktop **2.36.0**（Build `2.36.0-5596661662220288`）三平台精确指纹（跨平台 `resources/app.asar` SHA-256 `d2bc25eab00f2ff6f14395e45f13347eef605af5a63f28db7edbfd2ab42a7571`；`dist/preload.js`、`dist/main.js`、`dist/tray.js`、`dist/cablev2.js`、`dist/menu.js`、`dist/updater.js` 共 24 条规则）。
+- 适配 Desktop 2.36.0 新增界面与防误译边界保护（主界面精确词条增至 **2,553 条**，动态规则增至 **77 条**；Swarm 面板保持 **156 条**精确词条 + **11 条**规则）：
+  - 侧边栏与主视图新增「动态（Feeds）」工作流（`feeds-button` / `feeds-view` / `feed-caught-up` / `feed-details` / `feed-reply`），严格保护卡片标题、正文、计划内容与回复文本；
+  - 设置中心新增「凭据（Credentials）」（网络密钥与环境变量管理弹窗 `credential-modal`、`delete-credential-modal`、`chat-credential-card`）与设置搜索（`settings-search-input` / `settings-search-empty`），严格保护允许主机名与密钥值；
+  - 补充左上角 `app-logo-menu` 的「文件 / 缩放」子菜单、模型选择器套餐提示与升级引导（保护锁定模型原名）、侧边栏智能体可见性筛选（保护智能体名称）、远程会话搜索（保护搜索命中消息片段）、辅助面板浮动输入框与对话分叉/附件提示词条。
+- Linux x64 已在 Instabox `box-856891`（Debian 13 x86_64 + XFCE `DISPLAY=:1`）完成 `2.36.0` 静态补丁全生命周期（`doctor` / 非特权拦截 / `install` / 实机切换 / 运行期还原拦截 / 重启保持中文 / `restore` 无损还原）与 `agy-zh run` 动态守护模式（含主界面、设置中心、Swarm 子帧中英同步）真实桌面实测，`2.36.0` 的 `native_ui_tested_platforms` 启用 `["linux"]`；macOS 与 Windows 已核验 2.36.0 官方包指纹与离线 `doctor`，真机桌面待手工测试验收。
+
 ## [3.0.6] - 2026-11-27
 
 - **Windows 快捷方式改用原生 Win32 COM（`IShellLinkW` + `IPersistFile`）**：彻底移除对 `PowerShell + WScript.Shell` 的依赖，改用 UTF-16 Unicode 宽字符接口创建与回读 `Antigravity 中文.lnk`，解决英文 / 非中文系统代码页 Windows（如 GitHub `windows-latest` Runner）下中文字符被替换为 `??` 导致创建快捷方式失败的问题。
