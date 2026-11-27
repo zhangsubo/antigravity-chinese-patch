@@ -1,5 +1,14 @@
 # 更新日志
 
+## [3.0.6] - 2026-11-27
+
+- **Windows 快捷方式改用原生 Win32 COM（`IShellLinkW` + `IPersistFile`）**：彻底移除对 `PowerShell + WScript.Shell` 的依赖，改用 UTF-16 Unicode 宽字符接口创建与回读 `Antigravity 中文.lnk`，解决英文 / 非中文系统代码页 Windows（如 GitHub `windows-latest` Runner）下中文字符被替换为 `??` 导致创建快捷方式失败的问题。
+- **新增跨平台一键安装与维护脚本**：随 GitHub Releases 一并发布 `scripts/agy-zh-manage.sh`（macOS / Linux）、`scripts/agy-zh-manage.ps1` 与 `scripts/agy-zh-manage.cmd`（Windows，均纳入 `SHA256SUMS.txt` 强制校验）：
+  - 支持在线一行安装/自动升级、自动发现并安全迁移本地 `agy-zh-*` 文件（重命名为 `agy-zh(.exe)`、自动清理 macOS `com.apple.quarantine`）、自定义安装目录与 GitHub 下载加速镜像持久化（`manager.conf` / `manager.json`）、幂等用户级 `PATH` 集成与卸载清理；
+  - 支持升级前自动停止旧守护并在检测到已生成快捷方式时自动刷新内嵌稳定副本，支持一键部署 CDP 动态模式（`--mode cdp` / `-Mode cdp`）、停止 CDP 守护与移除快捷方式（`--stop --remove-shortcut` / `-Stop -RemoveShortcut`）、一键安装静态 ASAR 补丁（`--mode asar`）、状态与 `doctor` 摘要总览、守护日志查看/清空、还原官方原版及彻底卸载（含清理稳定副本与 `.cmd` 自删卸载 shim）；
+  - 兼容 Windows PowerShell 5.1 与 PowerShell 7 嵌套调用（SHA-256 与 HTTP 下载改用纯 `.NET` BCL 并隔离 `PSModulePath`），将 Windows 在线安装命令调整为 `irm ... -OutFile "$env:TEMP\agy-zh-manage.ps1"; & "$env:TEMP\agy-zh-manage.ps1"` 以兼容 `application/octet-stream` 响应头，并在 `tests/manage-scripts.test.mjs` 新增覆盖三平台的沙盒自动化测试。
+- **终端阻塞提示框兼容性优化**：将 `agy-zh` 在交互终端输出 `Stopped` 阻塞提示优化为纯 ASCII `*` 围框（精确计算中文全角宽度对齐右边框，无 ANSI 颜色依赖，非终端管道/日志重定向保持原样 `Stopped: ...`）。
+
 ## [3.0.5] - 2026-11-26
 
 - 新增 Antigravity Desktop **2.35.2**（Build `2.35.2-4585983447007232`）三平台精确指纹（跨平台 `resources/app.asar` SHA-256 `e057115571cf5085406d20f2427a5afac272b712ec84332c7157da0113d4b2d0`；`dist/preload.js`、`dist/main.js`、`dist/tray.js`、`dist/cablev2.js`、`dist/menu.js`、`dist/updater.js` 共 24 条规则）。

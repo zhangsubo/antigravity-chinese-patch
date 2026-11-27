@@ -4,7 +4,7 @@ set -euo pipefail
 # Antigravity Desktop 简体中文汉化工具 (agy-zh) 一键安装与维护脚本
 # 兼容 macOS (Bash 3.2+) 与 Linux
 
-SCRIPT_VERSION="3.0.5"
+SCRIPT_VERSION="3.0.6"
 REPO="${AGY_ZH_REPO:-zhangsubo/antigravity-chinese-patch}"
 RELEASES_BASE_URL="${AGY_ZH_RELEASES_BASE_URL:-https://github.com/${REPO}/releases}"
 API_LATEST_URL="${AGY_ZH_API_LATEST_URL:-https://api.github.com/repos/${REPO}/releases/latest}"
@@ -115,7 +115,7 @@ Antigravity 简体中文汉化工具 (agy-zh) 一键安装与维护脚本
 常用选项:
   --install-dir <DIR>         指定并持久化 agy-zh 安装目录（默认 ~/.local/bin）
   --from <FILE>               指定本地已下载的 agy-zh-* 文件进行迁移并重命名
-  --version <TAG>             指定下载版本（如 v3.0.5，默认 latest）
+  --version <TAG>             指定下载版本（如 v3.0.6，默认 latest）
   --mirror <PREFIX|none>      配置并持久化 GitHub 下载加速前缀（传 none 清除）
   --app <PATH>                指定并持久化 Antigravity 安装路径
   --delete-source             使用 --from 本地迁移成功后删除源文件

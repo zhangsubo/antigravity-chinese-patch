@@ -1,5 +1,5 @@
 {
-  "version": "3.0.5",
+  "version": "3.0.6",
   "exact": {
     "(ADC)": "（应用默认凭据 ADC）",
     "(tell the agent what to do instead)": "（告诉智能体改用什么方式处理）",
