@@ -699,10 +699,10 @@ class Program {
         AGY_ZH_SKIP_USER_PATH: '1',
         AGY_ZH_RELEASES_BASE_URL: `http://127.0.0.1:${port}/releases`,
       });
-      const psCmd = `$out = Join-Path $env:TEMP 'agy-zh-manage.ps1'; irm http://127.0.0.1:${port}/agy-zh-manage.ps1 -OutFile $out; & $out -NoPath -Yes`;
+      const psCmd = `irm http://127.0.0.1:${port}/agy-zh-manage.ps1 -OutFile "$env:TEMP\\agy-zh-manage.ps1"; powershell -NoProfile -ExecutionPolicy Bypass -File "$env:TEMP\\agy-zh-manage.ps1" -NoPath -Yes`;
       const res = await runAsync(
         'powershell.exe',
-        ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', psCmd],
+        ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Restricted', '-Command', psCmd],
         { env, cwd: sandbox },
       );
       assert.equal(res.status, 0, res.stderr || res.stdout);

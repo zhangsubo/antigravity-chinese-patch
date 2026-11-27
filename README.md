@@ -187,7 +187,7 @@ flowchart TB
   - **Windows (PowerShell / CMD)**：
     - 在线一键安装（默认安装到 `%LOCALAPPDATA%\Programs\agy-zh`，自动写入用户 `PATH`）：
       ```powershell
-      irm https://github.com/zhangsubo/antigravity-chinese-patch/releases/latest/download/agy-zh-manage.ps1 -OutFile "$env:TEMP\agy-zh-manage.ps1"; & "$env:TEMP\agy-zh-manage.ps1"
+      irm https://github.com/zhangsubo/antigravity-chinese-patch/releases/latest/download/agy-zh-manage.ps1 -OutFile "$env:TEMP\agy-zh-manage.ps1"; powershell -NoProfile -ExecutionPolicy Bypass -File "$env:TEMP\agy-zh-manage.ps1"
       ```
     - 或从 [GitHub Releases](https://github.com/zhangsubo/antigravity-chinese-patch/releases) 下载 `agy-zh-manage.ps1` 与 `agy-zh-manage.cmd`（同目录有 `agy-zh-windows-*.exe` 时会自动提示迁移并重命名为 `agy-zh.exe`），直接双击 `agy-zh-manage.cmd` 打开中文维护菜单，或在终端执行：
       ```powershell
@@ -239,13 +239,13 @@ flowchart TB
   ```bash
   # 1) 以动态模式启动 Antigravity 并在后台常驻守护（客户端退出后自动退出）
   ./agy-zh run
-
+  
   # 2) 一键生成快捷方式（以后直接双击「Antigravity 中文」即可，无需再开终端）
   ./agy-zh shortcut
-
+  
   # 3) 仅停止后台守护进程（不关闭 Antigravity 客户端）
   ./agy-zh stop
-
+  
   # 4) 如需移除快捷方式
   ./agy-zh shortcut --remove
   ```
