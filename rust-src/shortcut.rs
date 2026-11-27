@@ -474,8 +474,13 @@ fn manage_windows_shortcut(
 #[cfg(target_os = "windows")]
 mod win_shortcut {
     use super::WindowsShortcutSpec;
-    use std::ffi::{OsStr, OsString};
-    use std::os::windows::ffi::{OsStrExt, OsStringExt};
+    use std::ffi::OsStr;
+    #[cfg(test)]
+    use std::ffi::OsString;
+    use std::os::windows::ffi::OsStrExt;
+    #[cfg(test)]
+    use std::os::windows::ffi::OsStringExt;
+    #[cfg(test)]
     use std::path::{Path, PathBuf};
     use windows::core::{Interface, PCWSTR};
     use windows::Win32::Foundation::RPC_E_CHANGED_MODE;

@@ -2,9 +2,10 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
+import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -13,6 +14,31 @@ const REPO_ROOT = path.resolve(__dirname, '..');
 const SH_SCRIPT = path.join(REPO_ROOT, 'scripts', 'agy-zh-manage.sh');
 const PS1_SCRIPT = path.join(REPO_ROOT, 'scripts', 'agy-zh-manage.ps1');
 const CMD_SCRIPT = path.join(REPO_ROOT, 'scripts', 'agy-zh-manage.cmd');
+const README_FILE = path.join(REPO_ROOT, 'README.md');
+const RELEASE_WORKFLOW = path.join(REPO_ROOT, '.github', 'workflows', 'release.yml');
+
+function runAsync(command, args, opts = {}) {
+  return new Promise((resolve) => {
+    const child = spawn(command, args, {
+      windowsHide: true,
+      windowsVerbatimArguments: Boolean(opts.windowsVerbatimArguments),
+      stdio: ['pipe', 'pipe', 'pipe'],
+      ...opts,
+    });
+    let stdout = '';
+    let stderr = '';
+    child.stdout.on('data', (chunk) => {
+      stdout += chunk.toString('utf8');
+    });
+    child.stderr.on('data', (chunk) => {
+      stderr += chunk.toString('utf8');
+    });
+    child.on('close', (status) => {
+      resolve({ status, stdout, stderr });
+    });
+    child.stdin.end();
+  });
+}
 
 function sha256File(filePath) {
   return crypto.createHash('sha256').update(fs.readFileSync(filePath)).digest('hex');
@@ -76,6 +102,11 @@ case "$cmd" in
         fi
       fi
     fi
+    if [ "$remove_mode" -eq 0 ] && [ -n "\${AGY_ZH_CONFIG_DIR:-}" ]; then
+      mkdir -p "\${AGY_ZH_CONFIG_DIR}/bin"
+      printf '#!/bin/sh\\nexit 0\\n' > "\${AGY_ZH_CONFIG_DIR}/bin/agy-zh"
+      chmod +x "\${AGY_ZH_CONFIG_DIR}/bin/agy-zh"
+    fi
     printf '{"action":"ok"}\\n'
     ;;
   stop|restore|install|run)
@@ -107,6 +138,23 @@ test('management scripts satisfy encoding and line-ending invariants', () => {
     if (cmdBuf[i] === 0x0a) {
       assert.equal(cmdBuf[i - 1], 0x0d, 'agy-zh-manage.cmd must use CRLF');
     }
+  }
+
+  const readmeText = fs.readFileSync(README_FILE, 'utf8');
+  const workflowText = fs.readFileSync(RELEASE_WORKFLOW, 'utf8');
+  for (const [label, doc] of [
+    ['README.md', readmeText],
+    ['release.yml', workflowText],
+  ]) {
+    assert.equal(
+      /agy-zh-manage\.ps1\s*\|\s*iex/i.test(doc),
+      false,
+      `${label} must not pipe UTF-8 BOM agy-zh-manage.ps1 into iex`,
+    );
+    assert.ok(
+      doc.includes('agy-zh-manage.ps1') && doc.includes('-OutFile'),
+      `${label} should download agy-zh-manage.ps1 via -OutFile before executing`,
+    );
   }
 });
 
@@ -275,7 +323,28 @@ if (process.platform !== 'win32') {
       assert.equal(res.status, 0);
       assert.equal(fs.readFileSync(logFile, 'utf8'), '');
 
-      // 6. Uninstall cleans binaries, script, config, shortcut, and PATH block
+      res = spawnSync('bash', [installedMgr, '--mirror', 'https://mirror.example.com', '--status'], {
+        env: releaseEnv,
+        encoding: 'utf8',
+      });
+      assert.equal(res.status, 0, res.stderr || res.stdout);
+      assert.ok(fs.readFileSync(path.join(configDir, 'manager.conf'), 'utf8').includes('MIRROR=https://mirror.example.com'));
+
+      res = spawnSync('bash', [installedMgr, '--mirror', 'none', '--status'], {
+        env: releaseEnv,
+        encoding: 'utf8',
+      });
+      assert.equal(res.status, 0, res.stderr || res.stdout);
+      assert.ok(fs.readFileSync(path.join(configDir, 'manager.conf'), 'utf8').includes('MIRROR=\n'));
+
+      res = spawnSync('bash', [installedMgr, '--mode', 'cdp', '--yes'], {
+        env: releaseEnv,
+        encoding: 'utf8',
+      });
+      assert.equal(res.status, 0, res.stderr || res.stdout);
+      assert.equal(fs.existsSync(path.join(configDir, 'bin', 'agy-zh')), true);
+
+      // 6. Uninstall cleans binaries, script, config, shortcut, stable copy, and PATH block
       res = spawnSync('bash', [installedMgr, '--uninstall', '--yes'], {
         env: releaseEnv,
         encoding: 'utf8',
@@ -284,6 +353,7 @@ if (process.platform !== 'win32') {
       assert.equal(fs.existsSync(installedBin), false);
       assert.equal(fs.existsSync(installedMgr), false);
       assert.equal(fs.existsSync(path.join(configDir, 'manager.conf')), false);
+      assert.equal(fs.existsSync(path.join(configDir, 'bin', 'agy-zh')), false);
       const rcAfterUninstall = fs.readFileSync(shellRc, 'utf8');
       assert.equal(rcAfterUninstall.includes('agy-zh-manage PATH'), false);
       assert.ok(rcAfterUninstall.includes('export EXISTING_VAR=1'));
@@ -294,6 +364,17 @@ if (process.platform !== 'win32') {
 }
 
 if (process.platform === 'win32') {
+  function withWinEnv(extra) {
+    const clean = {};
+    const drop = new Set(['localappdata', 'userprofile', 'temp', 'tmp']);
+    for (const [k, v] of Object.entries(process.env)) {
+      if (!drop.has(k.toLowerCase())) {
+        clean[k] = v;
+      }
+    }
+    return { ...clean, ...extra };
+  }
+
   function compileMockWindowsExe(outExe, version) {
     const csCode = `
 using System;
@@ -325,6 +406,20 @@ class Program {
           File.WriteAllText(lnk, "mock-lnk");
         }
       }
+      if (!remove) {
+        string localAppData = Environment.GetEnvironmentVariable("LOCALAPPDATA");
+        if (!string.IsNullOrEmpty(localAppData)) {
+          string binDir = Path.Combine(localAppData, "antigravity-chinese-patch", "bin");
+          Directory.CreateDirectory(binDir);
+          File.WriteAllText(Path.Combine(binDir, "agy-zh.exe"), "mock-stable");
+        }
+        string cfgDir = Environment.GetEnvironmentVariable("AGY_ZH_CONFIG_DIR");
+        if (!string.IsNullOrEmpty(cfgDir)) {
+          string cfgBinDir = Path.Combine(cfgDir, "bin");
+          Directory.CreateDirectory(cfgBinDir);
+          File.WriteAllText(Path.Combine(cfgBinDir, "agy-zh.exe"), "mock-stable");
+        }
+      }
       Console.WriteLine("{\\"action\\":\\"ok\\"}");
       return 0;
     }
@@ -350,12 +445,18 @@ class Program {
   test('agy-zh-manage.ps1 handles Windows local migration, file:// update with SHA-256, CDP mode, status, and uninstall', () => {
     const sandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'agy-zh-manage-win-'));
     try {
+      const localAppData = path.join(sandbox, 'localappdata');
+      const userProfile = path.join(sandbox, 'userprofile');
+      const tempDir = path.join(sandbox, 'temp');
       const configDir = path.join(sandbox, 'config');
       const customInstallDir = path.join(sandbox, '中文 目录', 'bin');
       const shortcutDir = path.join(sandbox, 'Desktop');
       const logFile = path.join(sandbox, 'agy-zh.log');
       const mockLog = path.join(sandbox, 'mock-calls.log');
       const downloadDir = path.join(sandbox, 'downloads');
+      fs.mkdirSync(localAppData, { recursive: true });
+      fs.mkdirSync(userProfile, { recursive: true });
+      fs.mkdirSync(tempDir, { recursive: true });
       fs.mkdirSync(downloadDir, { recursive: true });
       fs.mkdirSync(shortcutDir, { recursive: true });
       fs.writeFileSync(logFile, 'win-line1\n', 'utf8');
@@ -369,14 +470,17 @@ class Program {
         'utf8',
       );
 
-      const baseEnv = {
-        ...process.env,
+      const baseEnv = withWinEnv({
+        LOCALAPPDATA: localAppData,
+        USERPROFILE: userProfile,
+        TEMP: tempDir,
+        TMP: tempDir,
         AGY_ZH_CONFIG_DIR: configDir,
         AGY_ZH_SHORTCUT_DIR: shortcutDir,
         AGY_ZH_LOG_FILE: logFile,
         AGY_ZH_SKIP_USER_PATH: '1',
         MOCK_LOG_FILE: mockLog,
-      };
+      });
 
       // 1. Local migration
       let res = spawnSync(
@@ -395,7 +499,7 @@ class Program {
           '-NoPath',
           '-Yes',
         ],
-        { env: baseEnv, encoding: 'utf8' },
+        { env: baseEnv, cwd: sandbox, encoding: 'utf8' },
       );
       assert.equal(res.status, 0, res.stderr || res.stdout);
       const installedBin = path.join(customInstallDir, 'agy-zh.exe');
@@ -432,10 +536,10 @@ class Program {
       res = spawnSync(
         'powershell.exe',
         ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', installedPs1, '-Update', '-NoPath', '-Yes'],
-        { env: releaseEnv, encoding: 'utf8' },
+        { env: releaseEnv, cwd: sandbox, encoding: 'utf8' },
       );
       assert.equal(res.status, 0, res.stderr || res.stdout);
-      const verCheck = spawnSync(installedBin, ['--version'], { encoding: 'utf8' });
+      const verCheck = spawnSync(installedBin, ['--version'], { cwd: sandbox, encoding: 'utf8' });
       assert.equal(verCheck.stdout.trim(), 'agy-zh 3.0.9');
 
       // 3. Tampered release artifact fails SHA-256
@@ -443,45 +547,175 @@ class Program {
       res = spawnSync(
         'powershell.exe',
         ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', installedPs1, '-Update', '-NoPath', '-Yes'],
-        { env: releaseEnv, encoding: 'utf8' },
+        { env: releaseEnv, cwd: sandbox, encoding: 'utf8' },
       );
       assert.notEqual(res.status, 0);
-      assert.equal(spawnSync(installedBin, ['--version'], { encoding: 'utf8' }).stdout.trim(), 'agy-zh 3.0.9');
+      assert.equal(spawnSync(installedBin, ['--version'], { cwd: sandbox, encoding: 'utf8' }).stdout.trim(), 'agy-zh 3.0.9');
 
-      // 4. Mode CDP + Status + Uninstall
+      // 4. Mode CDP + Status + Stop/RemoveShortcut
       res = spawnSync(
         'powershell.exe',
         ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', installedPs1, '-Mode', 'cdp', '-NoPath', '-Yes'],
-        { env: releaseEnv, encoding: 'utf8' },
+        { env: releaseEnv, cwd: sandbox, encoding: 'utf8' },
       );
       assert.equal(res.status, 0, res.stderr || res.stdout);
 
       res = spawnSync(
         'powershell.exe',
         ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', installedPs1, '-Status'],
-        { env: releaseEnv, encoding: 'utf8' },
+        { env: releaseEnv, cwd: sandbox, encoding: 'utf8' },
       );
       assert.equal(res.status, 0, res.stderr || res.stdout);
 
       res = spawnSync(
         'powershell.exe',
         ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', installedPs1, '-Stop', '-RemoveShortcut', '-Yes'],
-        { env: releaseEnv, encoding: 'utf8' },
+        { env: releaseEnv, cwd: sandbox, encoding: 'utf8' },
       );
       assert.equal(res.status, 0, res.stderr || res.stdout);
       assert.equal(fs.existsSync(path.join(shortcutDir, 'Antigravity 中文.lnk')), false);
 
+      // 5. Mirror CLI persistence & clearing via .cmd wrapper
       res = spawnSync(
-        'powershell.exe',
-        ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', installedPs1, '-Uninstall', '-NoPath', '-Yes'],
-        { env: releaseEnv, encoding: 'utf8' },
+        'cmd.exe',
+        ['/d', '/s', '/c', `""${installedCmd}" -Mirror https://mirror.example.com -Status"`],
+        { env: releaseEnv, cwd: sandbox, encoding: 'utf8', windowsVerbatimArguments: true },
       );
       assert.equal(res.status, 0, res.stderr || res.stdout);
+      const confAfterMirrorSet = JSON.parse(fs.readFileSync(path.join(configDir, 'manager.json'), 'utf8'));
+      assert.equal(confAfterMirrorSet.MIRROR, 'https://mirror.example.com');
+
+      res = spawnSync(
+        'cmd.exe',
+        ['/d', '/s', '/c', `""${installedCmd}" -Mirror none -Status"`],
+        { env: releaseEnv, cwd: sandbox, encoding: 'utf8', windowsVerbatimArguments: true },
+      );
+      assert.equal(res.status, 0, res.stderr || res.stdout);
+      const confAfterMirrorClear = JSON.parse(fs.readFileSync(path.join(configDir, 'manager.json'), 'utf8'));
+      assert.equal(confAfterMirrorClear.MIRROR, '');
+
+      // 6. Re-create shortcut + stable copy, then uninstall via .cmd wrapper itself (no batch self-delete error)
+      res = spawnSync(
+        'cmd.exe',
+        ['/d', '/s', '/c', `""${installedCmd}" -Mode cdp -NoPath -Yes"`],
+        { env: releaseEnv, cwd: sandbox, encoding: 'utf8', windowsVerbatimArguments: true },
+      );
+      assert.equal(res.status, 0, res.stderr || res.stdout);
+      const localStableBin = path.join(localAppData, 'antigravity-chinese-patch', 'bin', 'agy-zh.exe');
+      const cfgStableBin = path.join(configDir, 'bin', 'agy-zh.exe');
+      assert.equal(fs.existsSync(localStableBin), true);
+      assert.equal(fs.existsSync(cfgStableBin), true);
+
+      res = spawnSync(
+        'cmd.exe',
+        ['/d', '/s', '/c', `""${installedCmd}" -Uninstall -NoPath -Yes"`],
+        { env: releaseEnv, cwd: sandbox, encoding: 'utf8', windowsVerbatimArguments: true },
+      );
+      assert.equal(res.status, 0, res.stderr || res.stdout);
+      assert.equal(res.stderr.trim(), '', `unexpected stderr on .cmd self-uninstall: ${res.stderr}`);
       assert.equal(fs.existsSync(installedBin), false);
       assert.equal(fs.existsSync(installedPs1), false);
       assert.equal(fs.existsSync(installedCmd), false);
       assert.equal(fs.existsSync(path.join(configDir, 'manager.json')), false);
+      assert.equal(fs.existsSync(path.join(shortcutDir, 'Antigravity 中文.lnk')), false);
+      assert.equal(fs.existsSync(localStableBin), false);
+      assert.equal(fs.existsSync(cfgStableBin), false);
     } finally {
+      fs.rmSync(sandbox, { recursive: true, force: true });
+    }
+  });
+
+  test('agy-zh-manage.ps1 online irm -OutFile workflow works over HTTP application/octet-stream', async () => {
+    const sandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'agy-zh-manage-http-'));
+    const localAppData = path.join(sandbox, 'localappdata');
+    const userProfile = path.join(sandbox, 'userprofile');
+    const configDir = path.join(localAppData, 'antigravity-chinese-patch');
+    const tempDir = path.join(sandbox, 'temp');
+    fs.mkdirSync(configDir, { recursive: true });
+    fs.mkdirSync(path.join(userProfile, 'Desktop'), { recursive: true });
+    fs.mkdirSync(tempDir, { recursive: true });
+
+    const asset = windowsAssetName();
+    const mockExe = path.join(sandbox, asset);
+    compileMockWindowsExe(mockExe, '3.0.9');
+    const exeBytes = fs.readFileSync(mockExe);
+    const ps1Bytes = fs.readFileSync(PS1_SCRIPT);
+    const cmdBytes = fs.readFileSync(CMD_SCRIPT);
+    const sumsText = [
+      `${sha256File(mockExe)}  ${asset}`,
+      `${sha256File(PS1_SCRIPT)}  agy-zh-manage.ps1`,
+      `${sha256File(CMD_SCRIPT)}  agy-zh-manage.cmd`,
+      '',
+    ].join('\n');
+
+    const server = http.createServer((req, res) => {
+      const urlPath = (req.url || '').split('?')[0];
+      if (urlPath === '/agy-zh-manage.ps1' || urlPath === '/releases/download/v3.0.9/agy-zh-manage.ps1') {
+        res.writeHead(200, { 'Content-Type': 'application/octet-stream' });
+        res.end(ps1Bytes);
+        return;
+      }
+      if (urlPath === '/releases/download/v3.0.9/agy-zh-manage.cmd') {
+        res.writeHead(200, { 'Content-Type': 'application/octet-stream' });
+        res.end(cmdBytes);
+        return;
+      }
+      if (urlPath === `/releases/download/v3.0.9/${asset}`) {
+        res.writeHead(200, { 'Content-Type': 'application/octet-stream' });
+        res.end(exeBytes);
+        return;
+      }
+      if (urlPath === '/releases/download/v3.0.9/SHA256SUMS.txt') {
+        res.writeHead(200, { 'Content-Type': 'application/octet-stream' });
+        res.end(sumsText);
+        return;
+      }
+      if (urlPath === '/releases/latest') {
+        res.writeHead(302, { Location: '/releases/tag/v3.0.9' });
+        res.end();
+        return;
+      }
+      if (urlPath === '/releases/tag/v3.0.9') {
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+        res.end('v3.0.9');
+        return;
+      }
+      res.writeHead(404);
+      res.end('not found');
+    });
+
+    await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+    const { port } = server.address();
+
+    try {
+      const env = withWinEnv({
+        LOCALAPPDATA: localAppData,
+        USERPROFILE: userProfile,
+        TEMP: tempDir,
+        TMP: tempDir,
+        AGY_ZH_CONFIG_DIR: configDir,
+        AGY_ZH_SHORTCUT_DIR: path.join(userProfile, 'Desktop'),
+        AGY_ZH_LOG_FILE: path.join(configDir, 'agy-zh.log'),
+        AGY_ZH_SKIP_USER_PATH: '1',
+        AGY_ZH_RELEASES_BASE_URL: `http://127.0.0.1:${port}/releases`,
+      });
+      const psCmd = `$out = Join-Path $env:TEMP 'agy-zh-manage.ps1'; irm http://127.0.0.1:${port}/agy-zh-manage.ps1 -OutFile $out; & $out -NoPath -Yes`;
+      const res = await runAsync(
+        'powershell.exe',
+        ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', psCmd],
+        { env, cwd: sandbox },
+      );
+      assert.equal(res.status, 0, res.stderr || res.stdout);
+
+      const installDir = path.join(localAppData, 'Programs', 'agy-zh');
+      const installedBin = path.join(installDir, 'agy-zh.exe');
+      assert.equal(fs.existsSync(installedBin), true);
+      assert.equal(fs.existsSync(path.join(installDir, 'agy-zh-manage.ps1')), true);
+      assert.equal(fs.existsSync(path.join(installDir, 'agy-zh-manage.cmd')), true);
+      const verOut = spawnSync(installedBin, ['--version'], { cwd: sandbox, encoding: 'utf8' });
+      assert.equal(verOut.stdout.trim(), 'agy-zh 3.0.9');
+    } finally {
+      server.close();
       fs.rmSync(sandbox, { recursive: true, force: true });
     }
   });

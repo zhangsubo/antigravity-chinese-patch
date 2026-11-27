@@ -7,10 +7,21 @@ if not exist "%PS_SCRIPT%" (
   if "%~1"=="" pause
   exit /b 1
 )
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%PS_SCRIPT%" %*
-set "EXIT_CODE=%ERRORLEVEL%"
-if "%~1"=="" (
-  echo.
-  pause
+set "SHIM_DIR=%TEMP%"
+if "%SHIM_DIR%"=="" set "SHIM_DIR=%SystemRoot%\Temp"
+set "SHIM=%SHIM_DIR%\agy-zh-manage-shim-v1.cmd"
+set "SHIM_TMP=%SHIM%.%RANDOM%"
+if not exist "%SHIM%" (
+  > "%SHIM_TMP%" (
+    echo @echo off
+    echo powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%%PS_SCRIPT%%" %%*
+    echo set "EXIT_CODE=%%ERRORLEVEL%%"
+    echo if "%%~1"=="" ^(
+    echo   echo.
+    echo   pause
+    echo ^)
+    echo exit /b %%EXIT_CODE%%
+  )
+  move /y "%SHIM_TMP%" "%SHIM%" >nul 2>&1
 )
-exit /b %EXIT_CODE%
+"%SHIM%" %*

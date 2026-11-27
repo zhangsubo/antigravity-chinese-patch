@@ -42,6 +42,7 @@ $Script:ReleasesBaseUrl = if ([string]::IsNullOrWhiteSpace($env:AGY_ZH_RELEASES_
 $Script:ApiLatestUrl = if ([string]::IsNullOrWhiteSpace($env:AGY_ZH_API_LATEST_URL)) { "https://api.github.com/repos/$($Script:Repo)/releases/latest" } else { $env:AGY_ZH_API_LATEST_URL.Trim() }
 
 $Script:IsPipedIex = [string]::IsNullOrEmpty($PSCommandPath)
+$Script:CliMirrorSet = $PSBoundParameters.ContainsKey("Mirror")
 $Script:ScriptPath = $PSCommandPath
 $Script:ScriptDir = if ([string]::IsNullOrEmpty($PSCommandPath)) { "" } else { Split-Path -Parent $PSCommandPath }
 
@@ -248,7 +249,7 @@ function Resolve-EffectiveSettings {
         $Script:EffectiveInstallDir = Join-Path $Script:LocalAppData "Programs\agy-zh"
     }
 
-    if ($PSBoundParameters.ContainsKey("Mirror")) {
+    if ($Script:CliMirrorSet) {
         $Script:EffectiveMirror = $Mirror.Trim()
     } elseif (Test-Path Env:AGY_ZH_MIRROR) {
         $Script:EffectiveMirror = $env:AGY_ZH_MIRROR.Trim()
@@ -614,7 +615,7 @@ function Install-FromRelease {
 }
 
 function Write-DefaultCmdWrapper([string]$CmdDest) {
-    $cmdContent = "@echo off`r`nsetlocal`r`nset `"PSModulePath=`"`r`nset `"PS_SCRIPT=%~dp0agy-zh-manage.ps1`"`r`nif not exist `"%PS_SCRIPT%`" (`r`n  echo [ERROR] Missing agy-zh-manage.ps1 next to agy-zh-manage.cmd`r`n  if `"%~1`"==`"`" pause`r`n  exit /b 1`r`n)`r`npowershell.exe -NoProfile -ExecutionPolicy Bypass -File `"%PS_SCRIPT%`" %*`r`nset `"EXIT_CODE=%ERRORLEVEL%`"`r`nif `"%~1`"==`"`" (`r`n  echo.`r`n  pause`r`n)`r`nexit /b %EXIT_CODE%`r`n"
+    $cmdContent = "@echo off`r`nsetlocal`r`nset `"PSModulePath=`"`r`nset `"PS_SCRIPT=%~dp0agy-zh-manage.ps1`"`r`nif not exist `"%PS_SCRIPT%`" (`r`n  echo [ERROR] Missing agy-zh-manage.ps1 next to agy-zh-manage.cmd`r`n  if `"%~1`"==`"`" pause`r`n  exit /b 1`r`n)`r`nset `"SHIM_DIR=%TEMP%`"`r`nif `"%SHIM_DIR%`"==`"`" set `"SHIM_DIR=%SystemRoot%\Temp`"`r`nset `"SHIM=%SHIM_DIR%\agy-zh-manage-shim-v1.cmd`"`r`nset `"SHIM_TMP=%SHIM%.%RANDOM%`"`r`nif not exist `"%SHIM%`" (`r`n  > `"%SHIM_TMP%`" (`r`n    echo @echo off`r`n    echo powershell.exe -NoProfile -ExecutionPolicy Bypass -File `"%%PS_SCRIPT%%`" %%*`r`n    echo set `"EXIT_CODE=%%ERRORLEVEL%%`"`r`n    echo if `"%%~1`"==`"`" ^(`r`n    echo   echo.`r`n    echo   pause`r`n    echo ^)`r`n    echo exit /b %%EXIT_CODE%%`r`n  )`r`n  move /y `"%SHIM_TMP%`" `"%SHIM%`" >nul 2>&1`r`n)`r`n`"%SHIM%`" %*`r`n"
     $ascii = New-Object System.Text.ASCIIEncoding
     [System.IO.File]::WriteAllText($CmdDest, $cmdContent, $ascii)
 }
@@ -1068,6 +1069,19 @@ function Do-Uninstall {
             Remove-Item -LiteralPath $f -Force -ErrorAction SilentlyContinue
         }
     }
+    $stableBins = @(
+        (Join-Path $Script:ConfigDir "bin\agy-zh.exe"),
+        (Join-Path $Script:LocalAppData "antigravity-chinese-patch\bin\agy-zh.exe")
+    ) | Select-Object -Unique
+    foreach ($sb in $stableBins) {
+        if (Test-Path -LiteralPath $sb) {
+            Remove-Item -LiteralPath $sb -Force -ErrorAction SilentlyContinue
+        }
+        $sbDir = Split-Path -Parent $sb
+        if ((Test-Path -LiteralPath $sbDir -PathType Container) -and (@(Get-ChildItem -LiteralPath $sbDir -Force -ErrorAction SilentlyContinue).Count -eq 0)) {
+            Remove-Item -LiteralPath $sbDir -Force -ErrorAction SilentlyContinue
+        }
+    }
     Write-Host "已完成彻底卸载（自定义词表与日志如存在未主动删除）。"
 }
 
@@ -1106,6 +1120,7 @@ function Interactive-ConfigureSettings {
             $Script:TargetCmd = Join-Path $Script:EffectiveInstallDir "agy-zh-manage.cmd"
             Ensure-UserPathConfigured
         }
+        $Script:InstallDir = ""
     }
 
     $newMirror = Read-Prompt "输入 GitHub 加速镜像前缀（输入 none 恢复直连，留空保持不变）: "
@@ -1115,6 +1130,8 @@ function Interactive-ConfigureSettings {
         } else {
             $Script:EffectiveMirror = $newMirror.Trim().TrimEnd("/")
         }
+        $Script:Mirror = ""
+        $Script:CliMirrorSet = $false
     }
 
     $newApp = Read-Prompt "输入 Antigravity 应用路径（输入 auto 恢复自动探测，留空保持不变）: "
@@ -1124,6 +1141,7 @@ function Interactive-ConfigureSettings {
         } else {
             $Script:EffectiveApp = Expand-UserPath $newApp
         }
+        $Script:App = ""
     }
 
     Save-Config
@@ -1200,7 +1218,7 @@ try {
     Resolve-EffectiveSettings
 
     if (-not $Uninstall) {
-        if (-not [string]::IsNullOrWhiteSpace($InstallDir) -or $PSBoundParameters.ContainsKey("Mirror") -or -not [string]::IsNullOrWhiteSpace($App)) {
+        if (-not [string]::IsNullOrWhiteSpace($InstallDir) -or $Script:CliMirrorSet -or -not [string]::IsNullOrWhiteSpace($App)) {
             Save-Config
         }
     }

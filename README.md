@@ -183,7 +183,7 @@ flowchart TB
   - **Windows (PowerShell / CMD)**：
     - 在线一键安装（默认安装到 `%LOCALAPPDATA%\Programs\agy-zh`，自动写入用户 `PATH`）：
       ```powershell
-      irm https://github.com/zhangsubo/antigravity-chinese-patch/releases/latest/download/agy-zh-manage.ps1 | iex
+      irm https://github.com/zhangsubo/antigravity-chinese-patch/releases/latest/download/agy-zh-manage.ps1 -OutFile "$env:TEMP\agy-zh-manage.ps1"; & "$env:TEMP\agy-zh-manage.ps1"
       ```
     - 或从 [GitHub Releases](https://github.com/zhangsubo/antigravity-chinese-patch/releases) 下载 `agy-zh-manage.ps1` 与 `agy-zh-manage.cmd`（同目录有 `agy-zh-windows-*.exe` 时会自动提示迁移并重命名为 `agy-zh.exe`），直接双击 `agy-zh-manage.cmd` 打开中文维护菜单，或在终端执行：
       ```powershell

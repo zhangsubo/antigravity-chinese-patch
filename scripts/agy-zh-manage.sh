@@ -1065,6 +1065,16 @@ do_uninstall() {
   fi
 
   rm -f "$TARGET_BIN" "$TARGET_SCRIPT" "$CONF_FILE"
+  for sb in "$CONFIG_DIR/bin/agy-zh" "$DEFAULT_CONFIG_DIR/bin/agy-zh"; do
+    if [ -e "$sb" ] || [ -L "$sb" ]; then
+      rm -f "$sb"
+    fi
+    local sb_dir
+    sb_dir="$(dirname "$sb")"
+    if [ -d "$sb_dir" ]; then
+      rmdir "$sb_dir" 2>/dev/null || true
+    fi
+  done
   log_info "已完成彻底卸载（自定义词表与日志如存在未主动删除）。"
 }
 
@@ -1097,6 +1107,7 @@ interactive_configure_settings() {
       INSTALL_DIR="$new_dir"
       TARGET_BIN="$INSTALL_DIR/agy-zh"
       TARGET_SCRIPT="$INSTALL_DIR/agy-zh-manage"
+      CLI_INSTALL_DIR=""
       ensure_path_configured
     fi
   fi
@@ -1108,6 +1119,8 @@ interactive_configure_settings() {
     else
       MIRROR="${new_mirror%/}"
     fi
+    CLI_MIRROR=""
+    CLI_MIRROR_SET=0
   fi
 
   prompt_read "输入 Antigravity 应用路径（输入 auto 恢复自动探测，留空保持不变）: " new_app
@@ -1121,6 +1134,7 @@ interactive_configure_settings() {
       esac
       APP_PATH="$new_app"
     fi
+    CLI_APP_PATH=""
   fi
 
   save_config
