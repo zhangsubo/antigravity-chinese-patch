@@ -1,5 +1,6 @@
 @echo off
 setlocal
+set "PSModulePath="
 set "PS_SCRIPT=%~dp0agy-zh-manage.ps1"
 if not exist "%PS_SCRIPT%" (
   echo [ERROR] Missing agy-zh-manage.ps1 next to agy-zh-manage.cmd

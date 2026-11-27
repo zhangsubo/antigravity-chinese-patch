@@ -312,15 +312,31 @@ function Fetch-UrlToFile([string]$RawUrl, [string]$DestPath) {
     }
 
     $targetUrl = Apply-MirrorUrl $RawUrl
+    $wc = New-Object System.Net.WebClient
     try {
-        Invoke-WebRequest -UseBasicParsing -Uri $targetUrl -OutFile $DestPath -TimeoutSec 180
+        $wc.Encoding = [System.Text.Encoding]::UTF8
+        $wc.Headers.Add("User-Agent", "agy-zh-manage")
+        $wc.DownloadFile($targetUrl, $DestPath)
     } catch {
         throw "下载失败: $targetUrl ($($_.Exception.Message))。网络提示: 若直连 GitHub 超时，可配置代理、使用 -Mirror <加速前缀>，或手动从 Releases 下载 $($Script:AssetName) 后用 -From 本地迁移。"
+    } finally {
+        $wc.Dispose()
     }
 }
 
 function Compute-Sha256([string]$FilePath) {
-    return (Get-FileHash -LiteralPath $FilePath -Algorithm SHA256).Hash.ToLowerInvariant()
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        $stream = [System.IO.File]::OpenRead($FilePath)
+        try {
+            $hashBytes = $sha.ComputeHash($stream)
+            return ([System.BitConverter]::ToString($hashBytes).Replace("-", "")).ToLowerInvariant()
+        } finally {
+            $stream.Dispose()
+        }
+    } finally {
+        $sha.Dispose()
+    }
 }
 
 function Lookup-Sha256InSums([string]$SumsFile, [string]$Asset) {
@@ -397,14 +413,20 @@ function Resolve-LatestTag {
     } catch {}
 
     if ([string]::IsNullOrEmpty($tag)) {
+        $wc = New-Object System.Net.WebClient
         try {
+            $wc.Encoding = [System.Text.Encoding]::UTF8
+            $wc.Headers.Add("User-Agent", "agy-zh-manage")
             $apiUrl = Apply-MirrorUrl $Script:ApiLatestUrl
-            $apiResp = Invoke-RestMethod -UseBasicParsing -Uri $apiUrl -TimeoutSec 20 -Headers @{ "User-Agent" = "agy-zh-manage" }
+            $apiJson = $wc.DownloadString($apiUrl)
+            $apiResp = $apiJson | ConvertFrom-Json
             $tagName = Get-JsonProp $apiResp "tag_name"
             if ($null -ne $tagName) {
                 $tag = [string]$tagName
             }
-        } catch {}
+        } catch {} finally {
+            $wc.Dispose()
+        }
     }
 
     if ([string]::IsNullOrEmpty($tag)) {
@@ -588,7 +610,7 @@ function Install-FromRelease {
 }
 
 function Write-DefaultCmdWrapper([string]$CmdDest) {
-    $cmdContent = "@echo off`r`nsetlocal`r`nset `"PS_SCRIPT=%~dp0agy-zh-manage.ps1`"`r`nif not exist `"%PS_SCRIPT%`" (`r`n  echo [ERROR] Missing agy-zh-manage.ps1 next to agy-zh-manage.cmd`r`n  exit /b 1`r`n)`r`npowershell.exe -NoProfile -ExecutionPolicy Bypass -File `"%PS_SCRIPT%`" %*`r`nset `"EXIT_CODE=%ERRORLEVEL%`"`r`nif `"%~1`"==`"`" (`r`n  echo.`r`n  pause`r`n)`r`nexit /b %EXIT_CODE%`r`n"
+    $cmdContent = "@echo off`r`nsetlocal`r`nset `"PSModulePath=`"`r`nset `"PS_SCRIPT=%~dp0agy-zh-manage.ps1`"`r`nif not exist `"%PS_SCRIPT%`" (`r`n  echo [ERROR] Missing agy-zh-manage.ps1 next to agy-zh-manage.cmd`r`n  if `"%~1`"==`"`" pause`r`n  exit /b 1`r`n)`r`npowershell.exe -NoProfile -ExecutionPolicy Bypass -File `"%PS_SCRIPT%`" %*`r`nset `"EXIT_CODE=%ERRORLEVEL%`"`r`nif `"%~1`"==`"`" (`r`n  echo.`r`n  pause`r`n)`r`nexit /b %EXIT_CODE%`r`n"
     $ascii = New-Object System.Text.ASCIIEncoding
     [System.IO.File]::WriteAllText($CmdDest, $cmdContent, $ascii)
 }
