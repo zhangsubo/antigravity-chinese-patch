@@ -18,6 +18,10 @@
 - **双模汉化架构（按需切换，互不冲突）**：
   - **模式一（推荐）：零改包 CDP 动态守护（`agy-zh run` / `agy-zh shortcut`）**——完全不修改 `Antigravity.app` 原包，保留 Google 官方签名与 Apple 公证，客户端更新后可用中文快捷方式或 `agy-zh run` 重新启动汉化；在 Linux `/opt` 或 Windows `Program Files` 等系统目录安装原版时也**无需 `sudo` 或管理员权限**即可运行；支持一键生成 macOS `Antigravity 中文.app`、Windows 桌面 `.lnk` 或 Linux `.desktop` 快捷方式。
   - **模式二：静态 ASAR 安全补丁（`agy-zh install` / `agy-zh restore`）**——内存级二进制 ASAR 分块 SHA-256 重写；macOS 升级为 APFS 写时复制秒级备份（失败回退 `ditto`）；除主界面与 Swarm 面板外，进一步覆盖 Electron 原生托盘、退出确认框、更新提示与会话右键菜单；支持存量 v2（`schema: 1` / `TeacherXuAI`）备份与状态记录 **100% 无损兼容还原**。
+- **跨平台一键安装与维护脚本（`agy-zh-manage`）**：
+  - 提供 `agy-zh-manage.sh`（macOS / Linux）与 `agy-zh-manage.ps1` / `agy-zh-manage.cmd`（Windows），支持在线一行安装与 GitHub Releases 离线下载，内置交互式中文维护菜单与完整 CLI 参数双模式；
+  - 自动识别系统与架构并强制校验 `SHA256SUMS.txt`，自动发现并迁移重命名本地 `agy-zh-*` 文件为 `agy-zh(.exe)`（macOS 自动清理 `com.apple.quarantine`），支持自定义安装目录、`--mirror` 下载加速镜像与应用路径持久化（`manager.conf` / `manager.json`）以及用户级 `PATH` 幂等配置；
+  - 升级前自动停止旧守护并在检测到已存在快捷方式时自动刷新内嵌稳定副本，同时集成一键部署 CDP / 静态 ASAR、停止 CDP 守护与移除快捷方式、状态诊断、守护日志查看/清空、还原原版与彻底卸载清理。
 - **五大覆盖域深度汉化（主界面 2,337 条精确词条 + 64 条动态规则；Swarm 面板 156 条专用词条 + 11 条规则）**：
   - **设置中心**：账户、通用（含语音模式）、应用、外观、浏览器、界面布局、快捷键、通知、模型与用量、定制化（含插件云端连接与多账号说明）、意见反馈、项目与运行环境（含环境初始化脚本验证）等全部设置页与悬停说明；
   - **主界面与导航**：侧边栏（含协调器与扩展显示筛选）、Linux 顶部自定义菜单栏（`title-menu-bar`：工作区 / 视图 / 窗口、检查更新、命令面板、最小化/最大化/关闭与动态版本号）、首次启动登录引导页、创建项目向导弹窗（本地/云端远程切换、文件夹与资源选择、项目命名与重复检测）、项目与分支/工作树选择器（含新建工作树、SSH 远程主机、连接弹窗、机器切换器与 GitHub 仓库入口）、模型选择器与配额浮层（含 `新`/`快速`/`提示` 胶囊及 `本周额度`/`5 小时额度`/`剩余 %`）、主面板「自动化（Automations）」及「自定义配置（Customizations）」插件市场与已安装视图；
@@ -335,6 +339,21 @@ flowchart TB
 | `agy-zh doctor` | 只读诊断版本、补丁状态、锚点、备份和 CDP 端口连通性 | `--app <PATH>` |
 | `agy-zh install` | 安装静态 ASAR 安全补丁 | `--app <PATH>`、`--acknowledge-signature-change`、`--allow-local-library-loading`、`--replace-stale-backup`、`--custom-translations <PATH>`、`--trust-custom-translations` |
 | `agy-zh restore` | 从备份无损还原原版应用与签名（兼容 v2） | `--app <PATH>` |
+
+### 一键维护脚本（`agy-zh-manage` / `agy-zh-manage.cmd`）速查
+
+| macOS / Linux 参数 | Windows 参数 | 用途 |
+| --- | --- | --- |
+| `agy-zh-manage`（无参数） | `agy-zh-manage.cmd`（双击/无参数） | 打开 1–9 中文交互式维护菜单（无交互终端时自动完成基础安装） |
+| `--mode cdp` | `-Mode cdp` | 一键部署零改包 CDP 动态汉化并生成中文快捷方式 |
+| `--stop` / `--remove-shortcut` | `-Stop` / `-RemoveShortcut` | 停止后台 CDP 守护进程，可选同步移除中文快捷方式 |
+| `--mode asar` | `-Mode asar` | 一键安装静态 ASAR 安全补丁（macOS 仍需确认签名变化） |
+| `--update` | `-Update` | 在线检查并升级 `agy-zh` 与维护脚本，自动停旧守护并刷新已有快捷方式 |
+| `--from <FILE>` / `--delete-source` | `-From <FILE>` / `-DeleteSource` | 从本地 `agy-zh-*` 迁移并重命名为 `agy-zh(.exe)`，可选删除源文件 |
+| `--install-dir <DIR>` / `--mirror <PREFIX\|none>` / `--app <PATH>` | `-InstallDir <DIR>` / `-Mirror <PREFIX\|none>` / `-App <PATH>` | 配置并持久化安装目录、下载加速镜像前缀或 Antigravity 应用路径 |
+| `--status` / `--logs` / `--clear-logs` | `-Status` / `-Logs` / `-ClearLogs` | 查看本地/云端版本与 `doctor` 摘要，查看最近 50 行或清空守护日志 |
+| `--restore` / `--uninstall`（`--restore-app`） | `-Restore` / `-Uninstall`（`-RestoreApp`） | 还原官方原版应用，或彻底卸载脚本、`agy-zh`、快捷方式与 `PATH` |
+| `--no-path` / `-y, --yes` / `-h, --help` | `-NoPath` / `-Yes` / `-Help` | 跳过用户 `PATH` 修改 / 非交互确认 / 查看帮助 |
 
 如果更新后界面变回英文，执行 `agy-zh doctor`。当守护进程仍在运行而 `cdp_endpoint_reachable` 为 `false` 时，先等客户端启动完成。若持续断开，保存工作并完全退出 Desktop，再依次运行 `agy-zh stop` 和 `agy-zh run`。3.0.1 守护进程会在已建立的 CDP 连接连续中断 30 秒后自行退出。
 
