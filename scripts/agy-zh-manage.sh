@@ -74,6 +74,7 @@ OPT_RESTORE_APP=0
 OPT_ACK_SIG=0
 OPT_ALLOW_LIB=0
 OPT_REPLACE_STALE=0
+OPT_REMOVE_SHORTCUT=0
 
 TMP_WORK_DIR=""
 LAST_SUMS_FILE=""
@@ -102,6 +103,8 @@ Antigravity 简体中文汉化工具 (agy-zh) 一键安装与维护脚本
 主要动作:
   --mode cdp                  一键部署零改包 CDP 动态汉化（推荐，生成快捷方式）
   --mode asar                 一键安装静态 ASAR 安全补丁
+  --stop                      停止 CDP 动态守护进程（可配合 --remove-shortcut 移除快捷方式）
+  --remove-shortcut           移除「Antigravity 中文」快捷方式
   --update                    在线检查并更新 agy-zh 与本地维护脚本（自动刷新快捷方式）
   --status                    查看本地/云端版本、安装目录、快捷方式与 doctor 诊断摘要
   --logs                      查看最近 50 行 CDP 动态守护日志
@@ -973,6 +976,45 @@ do_clear_logs() {
   fi
 }
 
+do_remove_shortcut() {
+  if [ ! -x "$TARGET_BIN" ]; then
+    log_err "未找到 ${TARGET_BIN}，请先安装 agy-zh"
+    return 1
+  fi
+  local sc_path=""
+  if sc_path="$(detect_existing_shortcut_path 2>/dev/null)"; then
+    run_agy_shortcut 1
+    log_info "已移除快捷方式: ${sc_path}"
+  else
+    run_agy_shortcut 1 >/dev/null 2>&1 || true
+    log_info "未检测到已生成的中文快捷方式。"
+  fi
+}
+
+do_stop_cdp() {
+  if [ ! -x "$TARGET_BIN" ]; then
+    log_err "未找到 ${TARGET_BIN}，请先安装 agy-zh"
+    return 1
+  fi
+  "$TARGET_BIN" stop
+  if [ "$OPT_REMOVE_SHORTCUT" -eq 1 ]; then
+    do_remove_shortcut
+  elif [ "$OPT_YES" -eq 0 ] && has_tty; then
+    local sc_path=""
+    if sc_path="$(detect_existing_shortcut_path 2>/dev/null)"; then
+      local rm_ans=""
+      prompt_read "是否同时移除「Antigravity 中文」快捷方式 (${sc_path})？[y/N]: " rm_ans
+      case "$(to_lower "$rm_ans")" in
+        y|yes)
+          run_agy_shortcut 1
+          log_info "已移除快捷方式: ${sc_path}"
+          ;;
+      esac
+    fi
+  fi
+  log_info "提示: CDP 动态模式不修改官方原包；完全退出 Antigravity 后直接启动原版图标即为官方英文原版。"
+}
+
 do_restore() {
   if [ ! -x "$TARGET_BIN" ]; then
     log_err "未找到 ${TARGET_BIN}，请先安装 agy-zh"
@@ -1098,24 +1140,27 @@ interactive_menu() {
     log_info "  当前版本: ${local_ver:-未安装} | 镜像源: ${MIRROR:-直连 GitHub}"
     log_info "------------------------------------------------"
     log_info "  1. 一键部署 CDP 动态汉化（推荐：不改原包 + 快捷方式）"
-    log_info "  2. 一键安装静态 ASAR 安全补丁（含原生右键/托盘菜单）"
-    log_info "  3. 安装 / 迁移本地文件 / 在线更新 agy-zh"
-    log_info "  4. 查看状态总览与诊断报告"
-    log_info "  5. 查看或清空 CDP 守护日志"
-    log_info "  6. 还原 Antigravity 为官方原版"
-    log_info "  7. 设置安装目录 / 下载镜像源 / 应用路径"
-    log_info "  8. 彻底卸载 agy-zh 与本维护脚本"
+    log_info "  2. 停止 CDP 动态守护 / 移除中文快捷方式"
+    log_info "  3. 一键安装静态 ASAR 安全补丁（含原生右键/托盘菜单）"
+    log_info "  4. 还原 Antigravity 为官方原版（静态补丁 restore）"
+    log_info "  5. 安装 / 迁移本地文件 / 在线更新 agy-zh"
+    log_info "  6. 查看状态总览与诊断报告"
+    log_info "  7. 查看或清空 CDP 守护日志"
+    log_info "  8. 设置安装目录 / 下载镜像源 / 应用路径"
+    log_info "  9. 彻底卸载 agy-zh 与本维护脚本"
     log_info "  0. 退出"
     log_info ""
 
     local choice=""
-    prompt_read "请输入编号 [0-8]: " choice
+    prompt_read "请输入编号 [0-9]: " choice
     case "$choice" in
       1) do_mode_cdp || true ;;
-      2) do_mode_asar || true ;;
-      3) do_install_or_update 0 || true ;;
-      4) do_status || true ;;
-      5)
+      2) do_stop_cdp || true ;;
+      3) do_mode_asar || true ;;
+      4) do_restore || true ;;
+      5) do_install_or_update 0 || true ;;
+      6) do_status || true ;;
+      7)
         do_logs || true
         local clr=""
         prompt_read "是否清空日志文件？[y/N]: " clr
@@ -1123,9 +1168,8 @@ interactive_menu() {
           y|yes) do_clear_logs || true ;;
         esac
         ;;
-      6) do_restore || true ;;
-      7) interactive_configure_settings || true ;;
-      8)
+      8) interactive_configure_settings || true ;;
+      9)
         local confirm=""
         prompt_read "确认彻底卸载 agy-zh 与维护脚本？[y/N]: " confirm
         case "$(to_lower "$confirm")" in
@@ -1190,6 +1234,15 @@ parse_args() {
         ;;
       --update)
         ACTION="update"
+        shift
+        ;;
+      --stop)
+        ACTION="stop"
+        shift
+        ;;
+      --remove-shortcut)
+        OPT_REMOVE_SHORTCUT=1
+        ACTION="${ACTION:-remove_shortcut}"
         shift
         ;;
       --status)
@@ -1288,6 +1341,12 @@ main() {
       ;;
     restore)
       do_restore
+      ;;
+    stop)
+      do_stop_cdp
+      ;;
+    remove_shortcut)
+      do_remove_shortcut
       ;;
     uninstall)
       do_uninstall

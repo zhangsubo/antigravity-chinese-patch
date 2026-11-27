@@ -96,6 +96,124 @@ fn init_console_utf8() {
 #[cfg(not(windows))]
 fn init_console_utf8() {}
 
+fn char_display_width(ch: char) -> usize {
+    if ch.is_control() {
+        return 0;
+    }
+    let cp = ch as u32;
+    let wide = matches!(
+        cp,
+        0x1100..=0x115F
+            | 0x2E80..=0x303E
+            | 0x3041..=0x33FF
+            | 0x3400..=0x4DBF
+            | 0x4E00..=0x9FFF
+            | 0xA000..=0xA4CF
+            | 0xAC00..=0xD7A3
+            | 0xF900..=0xFAFF
+            | 0xFE10..=0xFE19
+            | 0xFE30..=0xFE6B
+            | 0xFF01..=0xFF60
+            | 0xFFE0..=0xFFE6
+            | 0x20000..=0x3FFFD
+    );
+    if wide {
+        2
+    } else {
+        1
+    }
+}
+
+fn str_display_width(s: &str) -> usize {
+    s.chars().map(char_display_width).sum()
+}
+
+fn wrap_display_lines(text: &str, max_width: usize) -> Vec<String> {
+    let mut lines = Vec::new();
+    let max_w = max_width.max(20);
+    for raw_para in text.split('\n') {
+        let para = raw_para.trim_end_matches('\r');
+        if para.is_empty() {
+            lines.push(String::new());
+            continue;
+        }
+        let chars: Vec<char> = para.chars().collect();
+        let mut cur = String::new();
+        let mut cur_w = 0usize;
+        for (idx, &ch) in chars.iter().enumerate() {
+            let w = char_display_width(ch);
+            if cur_w + w > max_w && !cur.is_empty() {
+                if ch.is_ascii_alphanumeric() {
+                    if let Some(space_pos) = cur.rfind(' ') {
+                        let tail = &cur[space_pos + 1..];
+                        if !tail.is_empty() && str_display_width(tail) < 18 {
+                            let carried = tail.to_string();
+                            cur.truncate(space_pos);
+                            lines.push(cur.trim_end().to_string());
+                            cur = carried;
+                            cur_w = str_display_width(&cur);
+                        }
+                    }
+                }
+                if cur_w + w > max_w && !cur.is_empty() {
+                    lines.push(cur.trim_end().to_string());
+                    cur.clear();
+                    cur_w = 0;
+                }
+            }
+            if cur.is_empty() && ch == ' ' {
+                continue;
+            }
+            cur.push(ch);
+            cur_w += w;
+            if ch == '；' && cur_w >= max_w / 3 && idx + 1 < chars.len() {
+                lines.push(cur);
+                cur = String::new();
+                cur_w = 0;
+            }
+        }
+        if !cur.is_empty() {
+            lines.push(cur);
+        }
+    }
+    if lines.is_empty() {
+        lines.push(String::new());
+    }
+    lines
+}
+
+fn format_stopped_message(err: &str, use_box: bool) -> String {
+    if !use_box {
+        return format!("Stopped: {err}");
+    }
+
+    const BOX_MAX_CONTENT_WIDTH: usize = 66;
+    const HEADER: &str = "[!] 操作已暂停 (Stopped)";
+    let body_lines = wrap_display_lines(err, BOX_MAX_CONTENT_WIDTH);
+    let inner_width = body_lines
+        .iter()
+        .map(|l| str_display_width(l))
+        .max()
+        .unwrap_or(0)
+        .max(str_display_width(HEADER));
+    let border = "*".repeat(inner_width + 4);
+
+    let mut out = Vec::with_capacity(body_lines.len() + 5);
+    out.push(border.clone());
+
+    let header_pad = " ".repeat(inner_width.saturating_sub(str_display_width(HEADER)));
+    out.push(format!("* {HEADER}{header_pad} *"));
+    out.push(format!("* {} *", " ".repeat(inner_width)));
+
+    for line in body_lines {
+        let pad = " ".repeat(inner_width.saturating_sub(str_display_width(&line)));
+        out.push(format!("* {line}{pad} *"));
+    }
+
+    out.push(border);
+    out.join("\n")
+}
+
 fn print_json<T: serde::Serialize>(value: &T) -> Result<(), String> {
     let out = serde_json::to_string_pretty(value)
         .map_err(|e| format!("Failed to serialize output JSON: {e}"))?;
@@ -287,8 +405,50 @@ fn main() -> ExitCode {
     };
 
     if let Err(err) = res {
-        eprintln!("Stopped: {err}");
+        eprintln!("{}", format_stopped_message(&err, io::stderr().is_terminal()));
         return ExitCode::from(1);
     }
     ExitCode::SUCCESS
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn non_tty_stopped_message_keeps_plain_format() {
+        let msg = "Antigravity Desktop 正在运行且未开启本地调试端口；请先完全退出客户端（macOS 按 Cmd+Q），再运行 `agy-zh run`";
+        let out = format_stopped_message(msg, false);
+        assert_eq!(out, format!("Stopped: {msg}"));
+        assert!(!out.contains("\x1b["));
+    }
+
+    #[test]
+    fn tty_stopped_message_renders_aligned_asterisk_box() {
+        let msg = "Antigravity Desktop 正在运行且未开启本地调试端口；请先完全退出客户端（macOS 按 Cmd+Q），再运行 `agy-zh run`";
+        let boxed = format_stopped_message(msg, true);
+        assert!(!boxed.contains("\x1b["));
+        assert!(boxed.contains("[!] 操作已暂停 (Stopped)"));
+        assert!(boxed.contains("请先完全退出客户端（macOS 按 Cmd+Q），再运行 `agy-zh run`"));
+        let lines: Vec<&str> = boxed.lines().collect();
+        assert!(lines.len() >= 6);
+        assert!(lines.first().unwrap().chars().all(|c| c == '*'));
+        assert!(lines.last().unwrap().chars().all(|c| c == '*'));
+        assert!(lines[1..lines.len() - 1]
+            .iter()
+            .all(|l| l.starts_with("* ") && l.ends_with(" *")));
+        let widths: Vec<usize> = lines.iter().map(|l| str_display_width(l)).collect();
+        assert!(widths.iter().all(|&w| w == widths[0] && w <= 72));
+    }
+
+    #[test]
+    fn wrap_display_lines_handles_long_unbroken_paths() {
+        let long_path = format!(
+            "Target path failed: /Applications/VeryLongDirectoryName/{}",
+            "segment_".repeat(12)
+        );
+        let wrapped = wrap_display_lines(&long_path, 48);
+        assert!(wrapped.len() >= 3);
+        assert!(wrapped.iter().all(|l| str_display_width(l) <= 48));
+    }
 }

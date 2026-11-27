@@ -173,6 +173,7 @@ flowchart TB
       bash agy-zh-manage.sh
       # 常用快捷命令（安装后可直接运行 agy-zh-manage）：
       # agy-zh-manage --mode cdp                        # 一键部署 CDP 动态汉化与快捷方式
+      # agy-zh-manage --stop --remove-shortcut          # 停止 CDP 守护并移除中文快捷方式
       # agy-zh-manage --mode asar                       # 一键安装静态 ASAR 补丁
       # agy-zh-manage --install-dir ~/my-bin --from ./agy-zh-macos-arm64 --delete-source
       # agy-zh-manage --update                          # 更新 agy-zh 并自动刷新已有快捷方式
@@ -187,6 +188,7 @@ flowchart TB
     - 或从 [GitHub Releases](https://github.com/zhangsubo/antigravity-chinese-patch/releases) 下载 `agy-zh-manage.ps1` 与 `agy-zh-manage.cmd`（同目录有 `agy-zh-windows-*.exe` 时会自动提示迁移并重命名为 `agy-zh.exe`），直接双击 `agy-zh-manage.cmd` 打开中文维护菜单，或在终端执行：
       ```powershell
       .\agy-zh-manage.cmd -Mode cdp
+      .\agy-zh-manage.cmd -Stop -RemoveShortcut
       .\agy-zh-manage.cmd -InstallDir "D:\Tools\agy-zh" -From ".\agy-zh-windows-x64.exe" -DeleteSource
       .\agy-zh-manage.cmd -Update
       .\agy-zh-manage.cmd -Status

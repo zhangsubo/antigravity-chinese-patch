@@ -8,6 +8,8 @@ param(
     [ValidateSet("", "cdp", "asar")]
     [string]$Mode = "",
     [switch]$Update,
+    [switch]$Stop,
+    [switch]$RemoveShortcut,
     [switch]$Status,
     [switch]$Logs,
     [switch]$ClearLogs,
@@ -104,6 +106,8 @@ Antigravity 简体中文汉化工具 (agy-zh) Windows 一键安装与维护脚�
 主要动作:
   -Mode cdp                   一键部署零改包 CDP 动态汉化（推荐，生成桌面快捷方式）
   -Mode asar                  一键安装静态 ASAR 安全补丁
+  -Stop                       停止 CDP 动态守护进程（可配合 -RemoveShortcut 移除桌面快捷方式）
+  -RemoveShortcut             移除桌面「Antigravity 中文.lnk」快捷方式
   -Update                     在线检查并更新 agy-zh 与本地维护脚本（自动刷新快捷方式）
   -Status                     查看本地/云端版本、安装目录、快捷方式与 doctor 诊断摘要
   -Logs                       查看最近 50 行 CDP 动态守护日志
@@ -965,6 +969,49 @@ function Do-ClearLogs {
     }
 }
 
+function Do-RemoveShortcut {
+    if (-not (Test-Path -LiteralPath $Script:TargetBin)) {
+        throw "未找到 $($Script:TargetBin)，请先安装 agy-zh.exe"
+    }
+    $lnk = Get-ShortcutPath
+    if (Test-Path -LiteralPath $lnk) {
+        $out = Invoke-AgyShortcut $true
+        if (-not [string]::IsNullOrWhiteSpace($out)) {
+            Write-Host $out
+        }
+        Write-Host "已移除快捷方式: $lnk"
+    } else {
+        try { $null = Invoke-AgyShortcut $true } catch {}
+        Write-Host "未检测到已生成的中文快捷方式。"
+    }
+}
+
+function Do-StopCdp {
+    if (-not (Test-Path -LiteralPath $Script:TargetBin)) {
+        throw "未找到 $($Script:TargetBin)，请先安装 agy-zh.exe"
+    }
+    $res = Invoke-NativeCommand $Script:TargetBin @("stop")
+    if ($res.ExitCode -ne 0) {
+        throw "停止 CDP 守护失败: $($res.Output)"
+    }
+    if (-not [string]::IsNullOrWhiteSpace($res.Output)) {
+        Write-Host $res.Output
+    }
+    if ($RemoveShortcut) {
+        Do-RemoveShortcut
+    } elseif (Test-IsInteractive) {
+        $lnk = Get-ShortcutPath
+        if (Test-Path -LiteralPath $lnk) {
+            $rmAns = Read-Prompt "是否同时移除桌面「Antigravity 中文」快捷方式 ($lnk)？[y/N]: "
+            if ($rmAns.ToLowerInvariant() -eq "y" -or $rmAns.ToLowerInvariant() -eq "yes") {
+                $null = Invoke-AgyShortcut $true
+                Write-Host "已移除快捷方式: $lnk"
+            }
+        }
+    }
+    Write-Host "提示: CDP 动态模式不修改官方原包；完全退出 Antigravity 后直接启动原版图标即为官方英文原版。"
+}
+
 function Do-Restore {
     if (-not (Test-Path -LiteralPath $Script:TargetBin)) {
         throw "未找到 $($Script:TargetBin)，请先安装 agy-zh.exe"
@@ -1098,33 +1145,35 @@ function Show-InteractiveMenu {
         Write-Host "  当前版本: $verDisp | 镜像源: $mDisp"
         Write-Host "------------------------------------------------"
         Write-Host "  1. 一键部署 CDP 动态汉化（推荐：不改原包 + 桌面快捷方式）"
-        Write-Host "  2. 一键安装静态 ASAR 安全补丁（含原生右键/托盘菜单）"
-        Write-Host "  3. 安装 / 迁移本地文件 / 在线更新 agy-zh.exe"
-        Write-Host "  4. 查看状态总览与诊断报告"
-        Write-Host "  5. 查看或清空 CDP 守护日志"
-        Write-Host "  6. 还原 Antigravity 为官方原版"
-        Write-Host "  7. 设置安装目录 / 下载镜像源 / 应用路径"
-        Write-Host "  8. 彻底卸载 agy-zh 与本维护脚本"
+        Write-Host "  2. 停止 CDP 动态守护 / 移除桌面快捷方式"
+        Write-Host "  3. 一键安装静态 ASAR 安全补丁（含原生右键/托盘菜单）"
+        Write-Host "  4. 还原 Antigravity 为官方原版（静态补丁 restore）"
+        Write-Host "  5. 安装 / 迁移本地文件 / 在线更新 agy-zh.exe"
+        Write-Host "  6. 查看状态总览与诊断报告"
+        Write-Host "  7. 查看或清空 CDP 守护日志"
+        Write-Host "  8. 设置安装目录 / 下载镜像源 / 应用路径"
+        Write-Host "  9. 彻底卸载 agy-zh 与本维护脚本"
         Write-Host "  0. 退出"
         Write-Host ""
 
-        $choice = Read-Prompt "请输入编号 [0-8]: "
+        $choice = Read-Prompt "请输入编号 [0-9]: "
         try {
             switch ($choice) {
                 "1" { Do-ModeCdp }
-                "2" { Do-ModeAsar }
-                "3" { Do-InstallOrUpdate $false }
-                "4" { Do-Status }
-                "5" {
+                "2" { Do-StopCdp }
+                "3" { Do-ModeAsar }
+                "4" { Do-Restore }
+                "5" { Do-InstallOrUpdate $false }
+                "6" { Do-Status }
+                "7" {
                     Do-Logs
                     $clr = Read-Prompt "是否清空日志文件？[y/N]: "
                     if ($clr.ToLowerInvariant() -eq "y" -or $clr.ToLowerInvariant() -eq "yes") {
                         Do-ClearLogs
                     }
                 }
-                "6" { Do-Restore }
-                "7" { Interactive-ConfigureSettings }
-                "8" {
+                "8" { Interactive-ConfigureSettings }
+                "9" {
                     $confirm = Read-Prompt "确认彻底卸载 agy-zh 与维护脚本？[y/N]: "
                     if ($confirm.ToLowerInvariant() -eq "y" -or $confirm.ToLowerInvariant() -eq "yes") {
                         Do-Uninstall
@@ -1160,6 +1209,10 @@ try {
         Do-Uninstall
     } elseif ($Update) {
         Do-InstallOrUpdate $true
+    } elseif ($Stop) {
+        Do-StopCdp
+    } elseif ($RemoveShortcut) {
+        Do-RemoveShortcut
     } elseif ($Mode -eq "cdp") {
         Do-ModeCdp
     } elseif ($Mode -eq "asar") {

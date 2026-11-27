@@ -251,10 +251,21 @@ if (process.platform !== 'win32') {
         assert.equal(res.status, 0, res.stderr || res.stdout);
       }
 
-      // 5. Status & Logs & ClearLogs
+      // 5. Status & Logs & ClearLogs & Stop/RemoveShortcut
       res = spawnSync('bash', [installedMgr, '--status'], { env: releaseEnv, encoding: 'utf8' });
       assert.equal(res.status, 0, res.stderr || res.stdout);
       assert.ok(res.stdout.includes('3.0.9'));
+
+      res = spawnSync('bash', [installedMgr, '--stop', '--remove-shortcut', '--yes'], {
+        env: releaseEnv,
+        encoding: 'utf8',
+      });
+      assert.equal(res.status, 0, res.stderr || res.stdout);
+      const expectedSc =
+        process.platform === 'darwin'
+          ? path.join(shortcutDir, 'Antigravity 中文.app')
+          : path.join(shortcutDir, 'antigravity-zh.desktop');
+      assert.equal(fs.existsSync(expectedSc), false, 'shortcut should be removed by --stop --remove-shortcut');
 
       res = spawnSync('bash', [installedMgr, '--logs'], { env: releaseEnv, encoding: 'utf8' });
       assert.equal(res.status, 0);
@@ -451,6 +462,14 @@ class Program {
         { env: releaseEnv, encoding: 'utf8' },
       );
       assert.equal(res.status, 0, res.stderr || res.stdout);
+
+      res = spawnSync(
+        'powershell.exe',
+        ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', installedPs1, '-Stop', '-RemoveShortcut', '-Yes'],
+        { env: releaseEnv, encoding: 'utf8' },
+      );
+      assert.equal(res.status, 0, res.stderr || res.stdout);
+      assert.equal(fs.existsSync(path.join(shortcutDir, 'Antigravity 中文.lnk')), false);
 
       res = spawnSync(
         'powershell.exe',
