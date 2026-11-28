@@ -36,7 +36,7 @@ try {
     [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
 } catch {}
 
-$Script:ScriptVersion = "3.0.6"
+$Script:ScriptVersion = "3.0.7"
 $Script:Repo = if ([string]::IsNullOrWhiteSpace($env:AGY_ZH_REPO)) { "zhangsubo/antigravity-chinese-patch" } else { $env:AGY_ZH_REPO.Trim() }
 $Script:ReleasesBaseUrl = if ([string]::IsNullOrWhiteSpace($env:AGY_ZH_RELEASES_BASE_URL)) { "https://github.com/$($Script:Repo)/releases" } else { $env:AGY_ZH_RELEASES_BASE_URL.Trim() }
 $Script:ApiLatestUrl = if ([string]::IsNullOrWhiteSpace($env:AGY_ZH_API_LATEST_URL)) { "https://api.github.com/repos/$($Script:Repo)/releases/latest" } else { $env:AGY_ZH_API_LATEST_URL.Trim() }
@@ -119,7 +119,7 @@ Antigravity 简体中文汉化工具 (agy-zh) Windows 一键安装与维护脚�
 常用选项:
   -InstallDir <DIR>           指定并持久化 agy-zh 安装目录（默认 %LOCALAPPDATA%\Programs\agy-zh）
   -From <FILE>                指定本地已下载的 agy-zh-*.exe 文件进行迁移并重命名
-  -Version <TAG>              指定下载版本（如 v3.0.6，默认 latest）
+  -Version <TAG>              指定下载版本（如 v3.0.7，默认 latest）
   -Mirror <PREFIX|none>       配置并持久化 GitHub 下载加速前缀（传 none 清除）
   -App <PATH>                 指定并持久化 Antigravity 安装目录
   -DeleteSource               使用 -From 本地迁移成功后删除源文件

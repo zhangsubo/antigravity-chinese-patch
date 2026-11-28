@@ -360,7 +360,7 @@ mod tests {
     fn embedded_manifest_loads_all_verified_versions() {
         let m = CompatibilityManifest::load_embedded().unwrap();
         assert_eq!(m.schema, 2);
-        for ver in ["2.22.0", "2.23.0", "2.29.1", "2.31.2", "2.32.1", "2.32.2", "2.33.0", "2.33.1", "2.34.0", "2.35.0", "2.35.2"] {
+        for ver in ["2.22.0", "2.23.0", "2.29.1", "2.31.2", "2.32.1", "2.32.2", "2.33.0", "2.33.1", "2.34.0", "2.35.0", "2.35.2", "2.36.0"] {
             assert!(m.verified_versions.contains_key(ver), "missing {ver}");
         }
         let v2330 = &m.verified_versions["2.33.0"];
@@ -383,6 +383,10 @@ mod tests {
         assert!(v2352.is_native_ui_tested(Platform::Linux));
         assert!(!v2352.is_native_ui_tested(Platform::Darwin));
         assert!(v2352.is_native_ui_tested(Platform::Win32));
+        let v2360 = &m.verified_versions["2.36.0"];
+        assert!(v2360.is_native_ui_tested(Platform::Linux));
+        assert!(!v2360.is_native_ui_tested(Platform::Darwin));
+        assert!(!v2360.is_native_ui_tested(Platform::Win32));
         assert_eq!(m.anchor_rules.entry, "dist/preload.js");
     }
 

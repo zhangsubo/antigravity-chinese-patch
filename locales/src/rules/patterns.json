@@ -140,7 +140,7 @@
   {
     "id": "your-plan",
     "regex": "^Your Plan:\\s*(.+)$",
-    "flags": "",
+    "flags": "i",
     "replacement": "当前套餐：$1"
   },
   {
@@ -382,5 +382,83 @@
     "regex": "^(\\d+) waiting$",
     "flags": "",
     "replacement": "$1 项待处理"
+  },
+  {
+    "id": "no-settings-match",
+    "regex": "^No settings match “([\\s\\S]+)”$",
+    "flags": "",
+    "replacement": "未找到与“$1”匹配的设置"
+  },
+  {
+    "id": "no-messages-matching-loaded",
+    "regex": "^No messages matching “([\\s\\S]+)” in loaded messages\\.$",
+    "flags": "",
+    "replacement": "在已加载消息中未找到与“$1”匹配的内容。"
+  },
+  {
+    "id": "no-messages-matching",
+    "regex": "^No messages matching “([\\s\\S]+)”\\.$",
+    "flags": "",
+    "replacement": "未找到与“$1”匹配的消息。"
+  },
+  {
+    "id": "show-in-sidebar-count",
+    "regex": "^Show in Sidebar \\((\\d+)/(\\d+)\\)$",
+    "flags": "",
+    "replacement": "在侧边栏中显示 ($1/$2)"
+  },
+  {
+    "id": "hide-non-admin-count",
+    "regex": "^Hide non-admin \\((\\d+)\\)$",
+    "flags": "",
+    "replacement": "隐藏非管理员 ($1)"
+  },
+  {
+    "id": "show-all-hidden-count",
+    "regex": "^Show all \\((\\d+) hidden\\)$",
+    "flags": "",
+    "replacement": "显示全部（已隐藏 $1 项）"
+  },
+  {
+    "id": "reset-cleared-count",
+    "regex": "^Reset \\((\\d+) cleared\\)$",
+    "flags": "",
+    "replacement": "重置（已清除 $1 项）"
+  },
+  {
+    "id": "marked-conversations-read",
+    "regex": "^Marked (\\d+) conversations? as read$",
+    "flags": "",
+    "replacement": "已将 $1 个对话标为已读"
+  },
+  {
+    "id": "feed-replies-count",
+    "regex": "^(\\d+) (?:reply|replies)$",
+    "flags": "",
+    "replacement": "$1 条回复"
+  },
+  {
+    "id": "aux-comments-count",
+    "regex": "^(\\d+) Comments?$",
+    "flags": "",
+    "replacement": "$1 条评论"
+  },
+  {
+    "id": "search-matches-count",
+    "regex": "^(\\d+\\+?) match(?:es)?$",
+    "flags": "",
+    "replacement": "$1 处匹配"
+  },
+  {
+    "id": "credential-network-secret-scope",
+    "regex": "^Network Secret · (.+)$",
+    "flags": "",
+    "replacement": "网络密钥 · $1"
+  },
+  {
+    "id": "credential-env-var-scope",
+    "regex": "^Environment Variable · (.+)$",
+    "flags": "",
+    "replacement": "环境变量 · $1"
   }
 ]

@@ -1024,7 +1024,7 @@ mod tests {
         let tray_hash = sha256_hex(fake_tray_bytes());
         for ver in [
             "2.22.0", "2.23.0", "2.29.1", "2.31.2", "2.32.1", "2.32.2", "2.33.0", "2.33.1",
-            "2.34.0", "2.35.0", "2.35.2",
+            "2.34.0", "2.35.0", "2.35.2", "2.36.0",
         ] {
             if let Some(rule) = m.verified_versions.get_mut(ver) {
                 rule.preload_sha256 = preload_hash.clone();
@@ -1103,7 +1103,7 @@ mod tests {
 
         for ver in [
             "2.22.0", "2.23.0", "2.29.1", "2.31.2", "2.32.1", "2.32.2", "2.33.0", "2.33.1",
-            "2.34.0", "2.35.0", "2.35.2",
+            "2.34.0", "2.35.0", "2.35.2", "2.36.0",
         ] {
             let (_tmp, root) = canonical_temp_dir();
             let (app, orig_asar) = create_darwin_app(&root, ver);

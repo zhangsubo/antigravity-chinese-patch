@@ -2175,3 +2175,175 @@ test('v3.0.5 translates 2.35.2 model-selector tooltip notices and Version 2.35.2
  w.__antigravity_chinese_patch__.dispose();
  dom.window.close();
 });
+
+test('v3.0.7 translates 2.36.0 Feeds, Credentials, Settings Search, App Logo Submenus, Plan Footer, Agent Visibility, and Session Search while protecting user content', () => {
+ const body = `
+  <nav aria-label="Sidebar">
+   <button data-testid="feeds-button" aria-label="Feeds"><span>Feeds</span></button>
+   <button data-testid="settings-button" aria-label="Settings"><span>Settings</span></button>
+  </nav>
+  <div data-testid="feeds-view">
+   <header>
+    <h1>Feeds</h1>
+    <button id="feed-reset">Reset (2 cleared)</button>
+   </header>
+   <div role="group" aria-label="Filter feed">
+    <button id="ft-all">All</button>
+    <button id="ft-needs">Needs you</button>
+   </div>
+   <div data-testid="feed-caught-up">
+    <p>You're all caught up</p>
+    <p>Nothing needs your attention right now. New deliverables, docs, and agent updates will appear here.</p>
+   </div>
+   <div data-testid="feed-card">
+    <div data-testid="feed-card-body">Settings</div>
+    <div data-testid="feed-card-plan">General</div>
+    <span id="fc-status">Ready to review</span>
+    <span id="fc-replies">3 replies</span>
+    <button id="fc-done">Mark done</button>
+    <button data-testid="feed-card-comment-on-plan">Comment on plan</button>
+   </div>
+   <aside data-testid="feed-details">
+    <button data-testid="feed-details-expand" aria-label="Expand panel"></button>
+    <div data-testid="feed-details-plan-content">Settings</div>
+    <div data-testid="feed-reply"><textarea placeholder="Type a message to send"></textarea></div>
+   </aside>
+  </div>
+  <div aria-label="Settings" class="settings-modal-container">
+   <h1>Settings</h1>
+   <button data-testid="settings-nav-item-Credentials">Credentials</button>
+   <h2>Credentials</h2>
+   <input data-testid="settings-search-input" aria-label="Search settings" placeholder="Search settings">
+   <p data-testid="settings-search-empty"></p>
+   <div role="alert" data-testid="credentials-error-banner">
+    <span>Environment error</span>
+    <button aria-label="Dismiss error"></button>
+   </div>
+   <button id="cred-add">+ Add secret</button>
+  </div>
+  <div role="dialog">
+   <div data-testid="credential-modal">
+    <span data-testid="credential-kind-option-http_secret">Network Secret</span>
+    <span data-testid="credential-kind-option-raw_secret">Environment Variable</span>
+    <div data-testid="credential-host-chips"><span>api.example.com</span><span>Settings</span></div>
+    <button data-testid="credential-modal-save">Save Secret</button>
+   </div>
+  </div>
+  <div data-testid="chat-credential-card">
+   <span data-testid="chat-credential-card-scope">Network Secret · Bearer · $TOKEN · Global</span>
+   <div data-testid="chat-credential-card-hosts"><span>Settings</span></div>
+   <button data-testid="chat-credential-card-action">Add secret</button>
+  </div>
+  <div role="menu" data-testid="app-logo-menu">
+   <div data-testid="app-logo-menu-file-trigger"><span>File</span></div>
+   <div data-testid="app-logo-menu-file-submenu">
+    <span>New Conversation</span>
+    <span>Create Project</span>
+    <span>Open Command Palette</span>
+   </div>
+   <div data-testid="app-logo-menu-zoom-trigger"><span>Zoom</span></div>
+   <div data-testid="app-logo-menu-zoom-submenu">
+    <span>Zoom In</span>
+    <span>Zoom Out</span>
+    <span>Reset Zoom</span>
+   </div>
+   <span id="ver-236">Version 2.36.0</span>
+  </div>
+  <div data-popover-popup="">
+   <div data-testid="model-selector-plan-locked-group">
+    <div data-testid="model-selector-plan-locked-header">Not available on your plan</div>
+    <div data-testid="model-selector-plan-locked-item"><span><span>Gemini Ultra Pro</span></span></div>
+    <button data-testid="model-selector-upgrade-for-access"><span>Upgrade for access</span></button>
+   </div>
+   <div data-testid="model-selector-plan-footer"><span id="plan-lbl">Your plan: Pro</span><button id="plan-view">View plan</button></div>
+   <input data-testid="agents-visibility-search" aria-label="Filter agents" placeholder="Filter agents…">
+   <span id="sb-show-hdr">Show in Sidebar (2/5)</span>
+   <div data-testid="sidebar-agents-show-item">Settings</div>
+   <button data-testid="agents-hide-non-admin-btn">Hide non-admin (3)</button>
+   <button data-testid="agents-show-all-btn">Show all (3 hidden)</button>
+  </div>
+  <div data-testid="agent-remote-session-search">
+   <input data-testid="agent-remote-session-search-input" aria-label="Search messages in this chat" placeholder="Search messages…">
+   <button data-testid="agent-remote-session-search-clear" aria-label="Clear search"></button>
+   <button data-testid="agent-remote-session-search-count">5+ matches</button>
+   <div data-testid="agent-remote-session-search-empty"></div>
+   <div data-testid="agent-remote-session-search-result">Settings</div>
+  </div>
+  <div data-testid="aux-pane-floating-composer">
+   <button data-testid="aux-pane-floating-composer-trigger">
+    <span id="aux-ph">Ask anything</span>
+    <span data-testid="aux-pane-floating-composer-comment-badge">2 Comments</span>
+   </button>
+  </div>
+ `;
+ const dom = create(body);
+ const w = dom.window;
+ const d = w.document;
+ const searchEmpty = d.querySelector('[data-testid="settings-search-empty"]');
+ searchEmpty.append(d.createTextNode('No settings match “'), d.createTextNode('foo'), d.createTextNode('”'));
+ const sessEmpty = d.querySelector('[data-testid="agent-remote-session-search-empty"]');
+ sessEmpty.append(d.createTextNode('No messages matching “'), d.createTextNode('bar'), d.createTextNode('”'), d.createTextNode(' in loaded messages.'));
+ w.__antigravity_chinese_patch__.refresh();
+
+ assert.equal(d.querySelector('[data-testid="feeds-button"]').textContent, '动态');
+ assert.equal(d.querySelector('[data-testid="feeds-view"] header h1').textContent, '动态');
+ assert.equal(d.querySelector('#feed-reset').textContent, '重置（已清除 2 项）');
+ assert.equal(d.querySelector('#ft-needs').textContent, '待你处理');
+ assert.equal(d.querySelector('[data-testid="feed-caught-up"] p').textContent, '已全部处理完毕');
+ assert.equal(d.querySelector('[data-testid="feed-card-body"]').textContent, 'Settings');
+ assert.equal(d.querySelector('[data-testid="feed-card-plan"]').textContent, 'General');
+ assert.equal(d.querySelector('[data-testid="feed-details-plan-content"]').textContent, 'Settings');
+ assert.equal(d.querySelector('#fc-status').textContent, '待审阅');
+ assert.equal(d.querySelector('#fc-replies').textContent, '3 条回复');
+ assert.equal(d.querySelector('#fc-done').textContent, '标为已完成');
+ assert.equal(d.querySelector('[data-testid="feed-card-comment-on-plan"]').textContent, '对计划发表评论');
+ assert.equal(d.querySelector('[data-testid="feed-details-expand"]').getAttribute('aria-label'), '展开面板');
+ assert.equal(d.querySelector('[data-testid="feed-reply"] textarea').getAttribute('placeholder'), '输入要发送的消息');
+
+ assert.equal(d.querySelector('[data-testid="settings-nav-item-Credentials"]').textContent, '凭据');
+ assert.equal(d.querySelector('[data-testid="settings-search-input"]').getAttribute('placeholder'), '搜索设置');
+ assert.equal(searchEmpty.textContent, '未找到与“foo”匹配的设置');
+ assert.equal(d.querySelector('[data-testid="credentials-error-banner"] span').textContent, '环境错误');
+ assert.equal(d.querySelector('#cred-add').textContent, '+ 添加密钥');
+ assert.equal(d.querySelector('[data-testid="credential-kind-option-http_secret"]').textContent, '网络密钥');
+ assert.equal(d.querySelector('[data-testid="credential-kind-option-raw_secret"]').textContent, '环境变量');
+ assert.equal(d.querySelector('[data-testid="credential-host-chips"]').textContent, 'api.example.comSettings');
+ assert.equal(d.querySelector('[data-testid="credential-modal-save"]').textContent, '保存密钥');
+ assert.equal(d.querySelector('[data-testid="chat-credential-card-scope"]').textContent, '网络密钥 · Bearer · $TOKEN · Global');
+ assert.equal(d.querySelector('[data-testid="chat-credential-card-hosts"]').textContent, 'Settings');
+ assert.equal(d.querySelector('[data-testid="chat-credential-card-action"]').textContent, '添加密钥');
+
+ assert.equal(d.querySelector('[data-testid="app-logo-menu-file-trigger"] span').textContent, '文件');
+ assert.equal(d.querySelector('[data-testid="app-logo-menu-zoom-trigger"] span').textContent, '缩放');
+ assert.equal(d.querySelector('[data-testid="app-logo-menu-zoom-submenu"] span').textContent, '放大');
+ assert.equal(d.querySelector('#ver-236').textContent, '版本 2.36.0');
+
+ assert.equal(d.querySelector('[data-testid="model-selector-plan-locked-header"]').textContent, '当前套餐不可用');
+ assert.equal(d.querySelector('[data-testid="model-selector-plan-locked-item"]').textContent, 'Gemini Ultra Pro');
+ assert.equal(d.querySelector('[data-testid="model-selector-upgrade-for-access"]').textContent, '升级以获取访问权限');
+ assert.equal(d.querySelector('#plan-lbl').textContent, '当前套餐：Pro');
+ assert.equal(d.querySelector('#plan-view').textContent, '查看套餐');
+
+ assert.equal(d.querySelector('#sb-show-hdr').textContent, '在侧边栏中显示 (2/5)');
+ assert.equal(d.querySelector('[data-testid="sidebar-agents-show-item"]').textContent, 'Settings');
+ assert.equal(d.querySelector('[data-testid="agents-hide-non-admin-btn"]').textContent, '隐藏非管理员 (3)');
+ assert.equal(d.querySelector('[data-testid="agents-show-all-btn"]').textContent, '显示全部（已隐藏 3 项）');
+
+ assert.equal(d.querySelector('[data-testid="agent-remote-session-search-input"]').getAttribute('placeholder'), '搜索消息…');
+ assert.equal(d.querySelector('[data-testid="agent-remote-session-search-count"]').textContent, '5+ 处匹配');
+ assert.equal(sessEmpty.textContent, '在已加载消息中未找到与“bar”匹配的内容。');
+ assert.equal(d.querySelector('[data-testid="agent-remote-session-search-result"]').textContent, 'Settings');
+ assert.equal(d.querySelector('#aux-ph').textContent, '尽管提问');
+ assert.equal(d.querySelector('[data-testid="aux-pane-floating-composer-comment-badge"]').textContent, '2 条评论');
+
+ w.__antigravity_chinese_patch__.setEnabled(false);
+ assert.equal(d.querySelector('[data-testid="feeds-button"]').textContent, 'Feeds');
+ assert.equal(d.querySelector('#feed-reset').textContent, 'Reset (2 cleared)');
+ assert.equal(searchEmpty.textContent, 'No settings match “foo”');
+ assert.equal(sessEmpty.textContent, 'No messages matching “bar” in loaded messages.');
+ assert.equal(d.querySelector('#ver-236').textContent, 'Version 2.36.0');
+ assert.equal(d.querySelector('#sb-show-hdr').textContent, 'Show in Sidebar (2/5)');
+ assert.equal(d.querySelector('[data-testid="agent-remote-session-search-count"]').textContent, '5+ matches');
+ w.__antigravity_chinese_patch__.dispose();
+ dom.window.close();
+});

@@ -42,7 +42,15 @@ export const SKIP =
   '[data-testid="inline-card-freeform-answer"],[data-testid="ask-question-entry-readonly"],' +
   '[data-testid="plugin-permission-name"],[data-testid="plugin-permission-default-row"],' +
   '[data-testid^="dictation-language-option-"],[data-testid^="dictation-language-pill-"],' +
-  '[data-testid="project-selector-clone-remote-item"],[data-testid="project-selector-clone-local-item"]';
+  '[data-testid="project-selector-clone-remote-item"],[data-testid="project-selector-clone-local-item"],' +
+  '[data-testid="sidebar-agents-show-item"],[data-testid="credential-host-chips"],' +
+  '[data-testid="chat-credential-card-hosts"],[data-testid="credential-plugin-pill"],' +
+  '[data-testid="agent-remote-session-search-result"],[data-testid="chat-mention-menu"],[data-testid="chat-mention-chip"],' +
+  '[data-testid="session-ref-title"],[data-testid="session-ref-snippet"],' +
+  '[data-testid="session-ref-hover-messages"],[data-testid="session-speaker-label"],' +
+  '[data-testid="feed-card-body"],[data-testid="feed-card-plan"],[data-testid="feed-card-latest-reply"],' +
+  '[data-testid="feed-card-gdoc"],[data-testid="feed-details-plan-content"],[data-testid="feed-details-step-plan"],' +
+  '[data-testid="model-selector-plan-locked-item"] > span > span:first-child';
 
 // Model/user data nodes, even when rendered inside a UI popup.
 export const CONTENT =
@@ -141,11 +149,26 @@ export const UI_TARGETS =
   '[data-testid="load-older-messages-button"],[data-testid="load-newer-status"],[data-testid="hidden-slice-loading"],' +
   '[data-testid="queued-messages-status"],[data-testid="queued-messages-card"],' +
   '[data-testid="orchestrator-picker-default"],' +
+  '[data-testid="app-logo-menu-file-submenu"],[data-testid="app-logo-menu-zoom-submenu"],' +
+  '[data-testid="settings-search-input"],[data-testid="settings-search-empty"],[data-testid="settings-search-results"],' +
+  '[data-testid="credential-modal"],[data-testid="delete-credential-modal"],' +
+  '[data-testid="credentials-error-banner"],[data-testid="chat-credential-card"],' +
+  '[data-testid="feeds-view"],[data-testid="feed-caught-up"],[data-testid="feed-details"],[data-testid="feed-reply"],' +
+  '[data-testid="model-selector-plan-footer"],[data-testid="model-selector-plan-locked-group"],[data-testid="model-quota-panel"],' +
+  '[data-testid="aux-pane-floating-composer"],[data-testid="agent-remote-session-search"],' +
+  '[data-testid="agents-visibility-search"],[data-testid="agents-hide-non-admin-btn"],[data-testid="agents-show-all-btn"],' +
+  '[data-testid="marketplace-invitation"],[data-testid="plugin-controls-note"],' +
+  '[data-testid="plugin-detail-blocked"],[data-testid="plugin-detail-controls-note"],' +
+  '[data-testid="remote-plugin-configure"],[data-testid="customizations-action-error"],' +
+  '[data-testid="overview-panel-overview-card"],' +
+  '[data-testid="chat-composer-attachments-disabled-notice"],[data-testid="chat-composer-error"],[data-testid="chat-composer-retry"],' +
+  '[data-testid="session-ref-hover-popover"],[data-testid="session-card-delivery-error"],[data-testid="session-card-retry"],' +
+  '[data-testid="rc-qr-loading-placeholder"],' +
   'input[placeholder="Search conversations..."]';
 
 export const settingsNavIds = new Set([
   'General', 'App', 'Appearance', 'Browser', 'Project 4K',
-  'Interface Layout', 'Shortcuts', 'Notifications', 'Models', 'Customizations', 'Developer',
+  'Interface Layout', 'Shortcuts', 'Notifications', 'Models', 'Customizations', 'Credentials', 'Developer',
   'Running', 'Provide Feedback', 'Give Feedback', 'Account', 'Conversations',
   'Projects', 'Environments',
 ]);
@@ -153,10 +176,10 @@ export const settingsNavIds = new Set([
 export const supportedSettingsHeadings = [
   'General', 'Application', 'Appearance', 'Browser',
   'Browser Actuation Permissions', 'Models & Usage', 'Shortcuts', 'Account',
-  'Provide Feedback', 'Give Feedback', 'Customizations', 'Notifications',
+  'Provide Feedback', 'Give Feedback', 'Customizations', 'Credentials', 'Notifications',
   'Project 4K', 'Interface Layout', 'Permissions', 'Global Permissions',
   'GitHub Permissions', 'File Permissions', 'Network Permissions',
-  'Terminal Commands', 'MCP Tools', 'Add MCP Servers', 'Manage Hooks', 'Plugin permissions',
+  'Terminal Commands', 'Tool Permissions', 'Commands Outside Sandbox', 'MCP Tools', 'Add MCP Servers', 'Manage Hooks', 'Plugin permissions',
   'Build With Google Plugins', 'Select your license', 'Developer',
   'Workspaces', 'Projects', 'Not in Project', 'Environments', 'Running (Dev only)',
 ];
@@ -164,9 +187,9 @@ export const supportedSettingsHeadings = [
 export const fallbackSettingsTexts = new Set([
   'Settings', 'General', 'Application', 'Appearance', 'Browser',
   'Browser Actuation Permissions', 'Models', 'Conversations', 'Shortcuts',
-  'Provide Feedback', 'Give Feedback', 'Account', 'Customizations',
+  'Provide Feedback', 'Give Feedback', 'Account', 'Customizations', 'Credentials',
   'Notifications', 'Project 4K', 'Interface Layout', 'Permissions',
-  'Global Permissions', 'GitHub Permissions', 'Plugin permissions', 'Developer', 'Back',
+  'Global Permissions', 'GitHub Permissions', 'Tool Permissions', 'Commands Outside Sandbox', 'Plugin permissions', 'Developer', 'Back',
   'Workspaces', 'Projects', 'Not in Project', 'Environments',
   'Settings for conversations outside of projects.',
   'Settings for conversations outside of workspaces.',
@@ -191,13 +214,13 @@ export const allowedFragments = new Set([
 ]);
 
 export const navigationLabels = new Set([
-  'New Conversation', 'Conversation History', 'Automations',
+  'New Conversation', 'Feeds', 'Conversation History', 'Automations',
   'Scheduled Tasks', 'Customizations', 'Plugins', 'Settings', 'Provide Feedback', 'Give Feedback',
   'Chief of Staff',
 ]);
 
 export const sidebarTestIds = new Set([
-  'automations-button', 'settings-button', 'plugins-button',
+  'automations-button', 'settings-button', 'plugins-button', 'feeds-button',
   'new-conversation-button', 'history-button', 'customizations-button', 'concierge-button',
 ]);
 
